@@ -12,8 +12,8 @@ export default function VolunteerHeatmapPage() {
         className="flex justify-between items-end shrink-0"
       >
         <div>
-          <h2 className="text-3xl font-black text-white tracking-tight">Crisis Heatmap</h2>
-          <p className="text-gray-400">Identify urgent needs and clusters requiring immediate attention.</p>
+          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Crisis Heatmap</h2>
+          <p className="text-slate-500">Identify urgent needs and clusters requiring immediate attention.</p>
         </div>
       </motion.div>
       <motion.div 

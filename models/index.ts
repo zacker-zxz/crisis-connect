@@ -6,7 +6,15 @@ const UserSchema = new Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ['ngo', 'volunteer'], required: true },
   skills: [{ type: String }],
+  profileImageUrl: { type: String },
+  availability: [{
+    day: { type: String },
+    enabled: { type: Boolean, default: false },
+    start: { type: String },
+    end: { type: String }
+  }],
   organizationName: { type: String }, // For NGOs
+  publicDescription: { type: String },
   location: {
     lat: { type: Number },
     lng: { type: Number },
@@ -30,5 +38,13 @@ const TaskSchema = new Schema({
   dateTime: { type: Date, required: true }
 }, { timestamps: true });
 
+const NGORequestSchema = new Schema({
+  ngoId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  volunteerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  message: { type: String, default: '' },
+  status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+}, { timestamps: true });
+
 export const User = models.User || model('User', UserSchema);
 export const Task = models.Task || model('Task', TaskSchema);
+export const NGORequest = models.NGORequest || model('NGORequest', NGORequestSchema);

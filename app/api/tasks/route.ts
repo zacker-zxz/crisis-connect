@@ -3,10 +3,10 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { Task } from '@/models';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sahayog_india_super_secret_fallback_key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // GET all tasks (for heatmap and volunteer dashboard)
-export async function GET(request: Request) {
+export async function GET() {
   try {
     await connectToDatabase();
     // In a real app, we might filter by query params (e.g., status, location radius)
@@ -21,6 +21,10 @@ export async function GET(request: Request) {
 // POST a new task (NGO only)
 export async function POST(request: Request) {
   try {
+    if (!JWT_SECRET) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
     // 1. Authenticate user
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

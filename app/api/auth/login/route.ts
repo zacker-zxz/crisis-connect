@@ -4,10 +4,14 @@ import jwt from 'jsonwebtoken';
 import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/models';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sahayog_india_super_secret_fallback_key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function POST(request: Request) {
   try {
+    if (!JWT_SECRET) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
     await connectToDatabase();
     const body = await request.json();
     const { email, password } = body;
@@ -35,10 +39,14 @@ export async function POST(request: Request) {
     // Return the user without the password
     const userResponse = {
       id: user._id,
+      _id: user._id,
       name: user.name,
       email: user.email,
+      createdAt: user.createdAt,
       role: user.role,
       skills: user.skills,
+      profileImageUrl: user.profileImageUrl,
+      availability: user.availability,
       location: user.location,
     };
 

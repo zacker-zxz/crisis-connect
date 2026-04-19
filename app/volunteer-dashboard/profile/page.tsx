@@ -22,18 +22,18 @@ export default function VolunteerProfilePage() {
   const availabilitySlots =
     user?.availability?.filter((slot) => slot.enabled).map((slot) => `${slot.day}: ${slot.start} - ${slot.end}`) || [];
   const dispatchMonthlyData = [
-    { month: 'Jan', value: 42 },
-    { month: 'Feb', value: 58 },
-    { month: 'Mar', value: 47 },
-    { month: 'Apr', value: 71 },
-    { month: 'May', value: 64 },
-    { month: 'Jun', value: 62 },
-    { month: 'Jul', value: 53 },
-    { month: 'Aug', value: 76 },
-    { month: 'Sep', value: 49 },
-    { month: 'Oct', value: 83 },
-    { month: 'Nov', value: 68 },
-    { month: 'Dec', value: 88 },
+    { month: 'JAN', value: 42 },
+    { month: 'FEB', value: 58 },
+    { month: 'MAR', value: 47 },
+    { month: 'APR', value: 71 },
+    { month: 'MAY', value: 64 },
+    { month: 'JUN', value: 62 },
+    { month: 'JUL', value: 53 },
+    { month: 'AUG', value: 76 },
+    { month: 'SEP', value: 49 },
+    { month: 'OCT', value: 83 },
+    { month: 'NOV', value: 68 },
+    { month: 'DEC', value: 88 },
   ];
 
   const achievements = [
@@ -93,7 +93,7 @@ export default function VolunteerProfilePage() {
               </div>
 
               <div className="flex flex-wrap justify-center lg:justify-start gap-3 pt-4">
-                 {user?.skills?.map(skill => (
+                 {user?.skills?.filter(s => s.toLowerCase() !== 'xyz').map(skill => (
                     <span key={skill} className="px-5 py-2 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black text-slate-600 uppercase tracking-widest hover:border-primary transition-all cursor-default">
                        {skill}
                     </span>

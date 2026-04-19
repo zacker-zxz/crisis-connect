@@ -225,11 +225,6 @@ export default function LiveHeatmap() {
                     task.urgency === 'Medium' ? 'bg-yellow-500' : 
                     'bg-green-500'
                   }`} />
-                  {distanceByTask[task._id] !== undefined && (
-                    <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-slate-900/90 text-white text-[9px] font-semibold opacity-0 group-hover/marker:opacity-100 transition">
-                      {distanceByTask[task._id]} km
-                    </div>
-                  )}
                </div>
             </div>
           </Marker>
@@ -268,11 +263,6 @@ export default function LiveHeatmap() {
                   <MapPin className="w-4 h-4 text-primary" />
                   {selectedTask.location.address}
                 </div>
-                {distanceByTask[selectedTask._id] !== undefined && (
-                  <p className="text-xs font-semibold text-slate-600 mt-2">
-                    Distance from your location: {distanceByTask[selectedTask._id]} km
-                  </p>
-                )}
               </div>
 
               <div className="bg-slate-50 rounded-[2.5rem] p-8 border border-slate-100 shadow-sm transition-all hover:shadow-md">
@@ -293,6 +283,34 @@ export default function LiveHeatmap() {
                   <p className="text-slate-900 font-bold">{selectedTask.volunteersNeeded} Help</p>
                 </div>
               </div>
+
+              {distanceByTask[selectedTask._id] !== undefined && (
+                <div className="bg-slate-950 p-6 rounded-[2rem] border border-slate-800 shadow-xl">
+                   <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                         <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                            <MapPin className="w-5 h-5 text-primary" />
+                         </div>
+                         <div>
+                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Proximity</p>
+                            <p className="text-white font-black text-xl">{distanceByTask[selectedTask._id]} <span className="text-xs text-slate-400 font-bold">KM</span></p>
+                         </div>
+                      </div>
+                      <div className="h-10 w-[1px] bg-slate-800 mx-2"></div>
+                      <div className="flex-1">
+                         <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-right">Route</p>
+                         <a 
+                           href={`https://www.google.com/maps/dir/?api=1&destination=${selectedTask.location.lat},${selectedTask.location.lng}${currentLocation ? `&origin=${currentLocation.lat},${currentLocation.lng}` : ''}`}
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="text-primary font-black text-xs text-right cursor-pointer hover:underline block"
+                         >
+                           VIEW MAPS
+                         </a>
+                      </div>
+                   </div>
+                </div>
+              )}
 
               <div className="pt-4">
                 <div className="flex items-center gap-3 p-4 bg-primary/10 border border-primary/20 rounded-2xl mb-8">

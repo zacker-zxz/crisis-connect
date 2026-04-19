@@ -17,21 +17,33 @@ export default function VolunteerCommunityPage() {
   const [ngos, setNgos] = useState<NGOItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState<string | null>(null);
+  const [existingRequests, setExistingRequests] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchNGOs = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch('/api/ngos');
-        const data = await res.json();
-        setNgos(Array.isArray(data) ? data : []);
+        const [ngosRes, reqsRes] = await Promise.all([
+          fetch('/api/ngos'),
+          token ? fetch('/api/ngo-requests', {
+            headers: { Authorization: `Bearer ${token}` }
+          }) : Promise.resolve({ ok: false })
+        ]);
+        
+        const ngosData = await ngosRes.json();
+        setNgos(Array.isArray(ngosData) ? ngosData : []);
+        
+        if (reqsRes.ok) {
+          const reqsData = await reqsRes.json();
+          setExistingRequests(reqsData.map((r: any) => r.ngoId));
+        }
       } catch {
         setNgos([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchNGOs();
-  }, []);
+    fetchData();
+  }, [token]);
 
   const sendRequest = async (ngoId: string) => {
     if (!token) {
@@ -54,6 +66,7 @@ export default function VolunteerCommunityPage() {
         alert(data.error || 'Failed to send request');
         return;
       }
+      setExistingRequests(prev => [...prev, ngoId]);
       alert('Request sent successfully.');
     } catch {
       alert('Failed to send request');
@@ -105,10 +118,10 @@ export default function VolunteerCommunityPage() {
 
               <button
                 onClick={() => sendRequest(ngo._id)}
-                disabled={requesting === ngo._id}
-                className="w-full py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 disabled:opacity-60 transition"
+                disabled={requesting === ngo._id || existingRequests.includes(ngo._id)}
+                className="w-full py-4 rounded-2xl bg-primary text-white font-black hover:bg-primary/90 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-500 transition-all uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
               >
-                {requesting === ngo._id ? 'Sending...' : 'REQUEST'}
+                {requesting === ngo._id ? 'Sending...' : existingRequests.includes(ngo._id) ? 'REQUESTED' : 'JOIN NGO'}
               </button>
             </div>
           ))}

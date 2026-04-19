@@ -28,8 +28,29 @@ export default function VolunteerLayout({ children }: { children: React.ReactNod
   const [notifOpen, setNotifOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, token, updateUser } = useAuthStore();
   const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const refreshUser = async () => {
+      if (token && !user?.profileImageUrl) {
+        try {
+          const res = await fetch('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            updateUser(data);
+          } else if (res.status === 401) {
+            logout();
+          }
+        } catch (err) {
+          console.error("Failed to refresh user data", err);
+        }
+      }
+    };
+    refreshUser();
+  }, [token]);
 
   const navItems = [
     { name: 'Dashboard', href: '/volunteer-dashboard', icon: Home },

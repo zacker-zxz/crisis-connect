@@ -59,3 +59,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function GET(request: Request) {
+  try {
+    if (!JWT_SECRET) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: 'ngo' | 'volunteer' };
+    
+    await connectToDatabase();
+    
+    const requests = await NGORequest.find({ volunteerId: decoded.userId });
+    return NextResponse.json(requests);
+  } catch (error) {
+    console.error('Fetch NGO requests error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

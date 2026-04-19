@@ -11,8 +11,8 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
 
   return (
     <>
-      {(!isDashboard && !isAuth) && <Header />}
-      <main className={`${(!isDashboard && !isAuth) ? 'flex-1' : 'h-screen'} flex flex-col`}>
+      {!isDashboard && <Header />}
+      <main className={`${!isDashboard ? 'flex-1' : 'h-screen'} flex flex-col`}>
         {children}
       </main>
       {(!isDashboard && !isAuth) && <Footer />}

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { UserPlus, Mail, Lock, User, Building2, Briefcase, AlertCircle } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Building2, Briefcase, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function SignUpPage() {
   const searchParams = useSearchParams();
@@ -17,6 +17,9 @@ export default function SignUpPage() {
     organizationName: '',
     skills: '',
   });
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -26,6 +29,11 @@ export default function SignUpPage() {
     e.preventDefault();
     setError('');
     setLoading(false);
+
+    if (formData.password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
 
     const submissionData = {
       ...formData,
@@ -63,22 +71,31 @@ export default function SignUpPage() {
         className="glass-card p-8 rounded-3xl w-full max-w-lg"
       >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold">Join Sahayog India</h1>
-          <p className="text-gray-400">Create an account to start making an impact</p>
+          <h1 className="text-3xl font-bold text-slate-800">Join Crisis Connect</h1>
+          <p className="text-slate-500">Create an account to start making an impact</p>
         </div>
 
-        <div className="flex bg-white/5 p-1 rounded-xl mb-8 border border-white/10">
+        <div className="relative flex bg-slate-100 p-1.5 rounded-2xl mb-8 border border-slate-200 overflow-hidden">
+          <motion.div 
+            className={`absolute top-1 bottom-1 w-[calc(50%-12px)] rounded-xl z-0 ${formData.role === 'volunteer' ? 'bg-primary' : 'bg-secondary'}`}
+            initial={false}
+            animate={{ 
+              x: formData.role === 'volunteer' ? '6px' : 'calc(100% + 18px)',
+              backgroundColor: formData.role === 'volunteer' ? '#14b8a6' : '#f59e0b'
+            }}
+            transition={{ type: 'spring', bounce: 0.15, duration: 0.6 }}
+          />
           <button 
             type="button"
             onClick={() => setFormData({...formData, role: 'volunteer'})}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${formData.role === 'volunteer' ? 'bg-primary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors z-10 ${formData.role === 'volunteer' ? 'text-white' : 'text-slate-500 hover:text-slate-800'}`}
           >
             Volunteer
           </button>
           <button 
             type="button"
             onClick={() => setFormData({...formData, role: 'ngo'})}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${formData.role === 'ngo' ? 'bg-secondary text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-colors z-10 ${formData.role === 'ngo' ? 'text-white' : 'text-slate-500 hover:text-slate-800'}`}
           >
             NGO / Lead
           </button>
@@ -93,76 +110,106 @@ export default function SignUpPage() {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2 col-span-1 md:col-span-2">
-            <label className="text-sm font-medium text-gray-300 ml-1">Full Name</label>
+            <label className="text-sm font-medium text-slate-600 ml-1">Full Name</label>
             <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input 
                 type="text" 
                 required
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition" 
+                className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition shadow-sm" 
                 placeholder="John Doe"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 ml-1">Email Address</label>
+            <label className="text-sm font-medium text-slate-600 ml-1">Email Address</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input 
                 type="email" 
                 required
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition" 
+                className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition shadow-sm" 
                 placeholder="name@example.com"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300 ml-1">Password</label>
+            <label className="text-sm font-medium text-slate-600 ml-1">Password</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 required
                 min={6}
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition" 
+                className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-12 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition shadow-sm" 
                 placeholder="••••••••"
               />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-600 ml-1">Confirm Password</label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input 
+                type={showConfirmPassword ? "text" : "password"} 
+                required
+                min={6}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-12 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition shadow-sm" 
+                placeholder="••••••••"
+              />
+              <button 
+                type="button" 
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+              >
+                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
           </div>
 
           {formData.role === 'ngo' ? (
             <div className="space-y-2 col-span-1 md:col-span-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Organization Name</label>
+              <label className="text-sm font-medium text-slate-600 ml-1">Organization Name</label>
               <div className="relative">
-                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input 
                   type="text" 
                   required={formData.role === 'ngo'}
                   value={formData.organizationName}
                   onChange={(e) => setFormData({...formData, organizationName: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-secondary transition" 
+                  className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/20 transition shadow-sm" 
                   placeholder="Global Relief Group"
                 />
               </div>
             </div>
           ) : (
             <div className="space-y-2 col-span-1 md:col-span-2">
-              <label className="text-sm font-medium text-gray-300 ml-1">Skills (comma separated)</label>
+              <label className="text-sm font-medium text-slate-600 ml-1">Skills (comma separated)</label>
               <div className="relative">
-                <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input 
                   type="text" 
                   value={formData.skills}
                   onChange={(e) => setFormData({...formData, skills: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-primary transition" 
+                  className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-12 pr-4 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition shadow-sm" 
                   placeholder="First Aid, Logistics, Teaching"
                 />
               </div>
@@ -172,7 +219,7 @@ export default function SignUpPage() {
           <button 
             type="submit" 
             disabled={loading}
-            className={`col-span-1 md:col-span-2 w-full ${formData.role === 'volunteer' ? 'bg-primary' : 'bg-secondary'} hover:opacity-90 text-white font-bold py-4 rounded-xl transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mt-4 shadow-xl`}
+            className={`col-span-1 md:col-span-2 w-full ${formData.role === 'volunteer' ? 'bg-primary shadow-[0_10px_25px_-5px_rgba(var(--primary-rgb),0.4)]' : 'bg-secondary shadow-[0_10px_25px_-5px_rgba(var(--secondary-rgb),0.4)]'} hover:opacity-90 text-white font-bold py-4 rounded-xl transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mt-4 transition-all duration-300`}
           >
             {loading ? 'Creating Account...' : (
               <>
@@ -182,8 +229,8 @@ export default function SignUpPage() {
           </button>
         </form>
 
-        <div className="mt-8 text-center text-sm text-gray-400">
-          Already have an account? <Link href="/signin" className="text-primary hover:underline font-semibold">Sign in here</Link>
+        <div className="mt-8 text-center text-sm text-slate-500">
+          Already have an account? <Link href="/signin" className="text-primary hover:underline font-semibold transition-colors">Sign in here</Link>
         </div>
       </motion.div>
     </div>

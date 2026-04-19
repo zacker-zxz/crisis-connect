@@ -12,22 +12,36 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    
-    // Check if user is authenticated
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     if (!token) {
       setAuthorized(false);
       router.push('/signin');
-    } else {
-      // Basic role-based access control
-      if (pathname.startsWith('/ngo-dashboard') && user?.role !== 'ngo') {
-        router.push('/volunteer-dashboard');
-      } else if (pathname.startsWith('/volunteer-dashboard') && user?.role !== 'volunteer') {
-        router.push('/ngo-dashboard');
-      } else {
-        setAuthorized(true);
-      }
+      return;
     }
-  }, [token, user, pathname, router]);
+
+    if (!user) {
+      setAuthorized(false);
+      return;
+    }
+
+    if (pathname.startsWith('/ngo-dashboard') && user.role !== 'ngo') {
+      setAuthorized(false);
+      router.push('/volunteer-dashboard');
+      return;
+    }
+
+    if (pathname.startsWith('/volunteer-dashboard') && user.role !== 'volunteer') {
+      setAuthorized(false);
+      router.push('/ngo-dashboard');
+      return;
+    }
+
+    setAuthorized(true);
+  }, [mounted, token, user, pathname, router]);
 
   // Avoid SSR/client mismatches by waiting for client mount first.
   if (!mounted) {

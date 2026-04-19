@@ -47,7 +47,14 @@ const persistUserSafely = (user: User) => {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
-  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null,
+  user: (() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return JSON.parse(localStorage.getItem('user') || 'null') as User | null;
+    } catch {
+      return null;
+    }
+  })(),
   setAuth: (token, user) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', token);

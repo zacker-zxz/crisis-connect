@@ -21,7 +21,7 @@ export default function NgoHeatmapPage() {
         animate={{ opacity: 1, scale: 1 }}
         className="flex-1 min-h-0"
       >
-        <LiveHeatmap />
+        <LiveHeatmap variant="ngo" />
       </motion.div>
     </div>
   );

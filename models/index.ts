@@ -6,7 +6,15 @@ const UserSchema = new Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ['ngo', 'volunteer'], required: true },
   skills: [{ type: String }],
-  organizationName: { type: String }, // For NGOs
+  organizationName: { type: String },
+  publicDescription: { type: String },
+  profileImageUrl: { type: String },
+  availability: [{
+    day: { type: String },
+    enabled: { type: Boolean },
+    start: { type: String },
+    end: { type: String },
+  }],
   location: {
     lat:     { type: Number },
     lng:     { type: Number },

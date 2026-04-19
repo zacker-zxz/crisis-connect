@@ -1,11 +1,11 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { UserPlus, Mail, Lock, User, Building2, Briefcase, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
-export default function SignUpPage() {
+function SignUpPageInner() {
   const searchParams = useSearchParams();
   const initialRole = searchParams.get('role') === 'ngo' ? 'ngo' : 'volunteer';
   
@@ -234,5 +234,19 @@ export default function SignUpPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-50">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      }
+    >
+      <SignUpPageInner />
+    </Suspense>
   );
 }

@@ -48,6 +48,8 @@ export async function POST(request: Request) {
       profileImageUrl: user.profileImageUrl,
       availability: user.availability,
       location: user.location,
+      organizationName: user.organizationName,
+      publicDescription: user.publicDescription,
     };
 
     return NextResponse.json({ token, user: userResponse }, { status: 200 });

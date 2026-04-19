@@ -21,7 +21,8 @@ import {
   UserPlus,
   UserCog,
   AlertTriangle,
-  Inbox
+  Inbox,
+  ChevronRight
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -132,87 +133,93 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 md:hidden"
+            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-md md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
-        {/* Sidebar */}
+        {/* Sidebar — aligned with volunteer dashboard shell */}
         <aside 
-          className={`fixed md:sticky top-0 h-full w-72 bg-white/80 backdrop-blur-xl border-r border-gray-200 z-50 transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} flex flex-col`}
+          className={`fixed md:sticky top-0 z-[70] flex h-full w-80 -translate-x-full transform flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : ''}`}
         >
-          <div className="p-8 flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-tr from-primary to-secondary rounded-lg flex items-center justify-center font-bold text-white shadow-lg text-xs">
+          <div className="flex items-center justify-between p-8">
+              <Link href="/" className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary font-black text-white shadow-[0_10px_24px_rgba(20,184,166,0.28)]">
                       CC
                   </div>
-                  <span className="text-xl font-black text-slate-800 tracking-tight">Crisis Connect</span>
+                  <span className="text-xl font-extrabold tracking-tight text-slate-900">Crisis Connect</span>
               </Link>
-            <button className="md:hidden text-slate-500 hover:text-slate-800" onClick={() => setSidebarOpen(false)}>
-              <X className="w-6 h-6" />
+            <button className="p-2 text-slate-400 hover:text-slate-800 md:hidden" onClick={() => setSidebarOpen(false)}>
+              <X className="h-6 w-6" />
             </button>
           </div>
           
-          <nav className="flex-1 px-4 space-y-1 mt-2 overflow-y-auto">
+          <nav className="mt-2 flex-1 space-y-2 overflow-y-auto px-5">
             {navItems.map((item) => (
               <Link 
                 key={item.name}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all ${
+                className={`group flex items-center justify-between rounded-2xl px-5 py-4 transition-all ${
                   pathname === item.href 
-                    ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm' 
-                    : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                    ? 'bg-primary text-white shadow-[0_12px_24px_rgba(20,184,166,0.25)]' 
+                    : 'font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
-                <item.icon className={`w-5 h-5 shrink-0 ${pathname === item.href ? 'text-primary' : ''}`} />
-                <span className="font-semibold text-sm tracking-wide">{item.name}</span>
+                <div className="flex items-center gap-4">
+                  <item.icon className={`h-5 w-5 shrink-0 ${pathname === item.href ? 'text-white' : 'text-slate-400 group-hover:text-primary'}`} />
+                  <span className="text-sm font-semibold">{item.name}</span>
+                </div>
+                {pathname === item.href && <ChevronRight className="h-4 w-4 opacity-50" />}
               </Link>
             ))}
           </nav>
 
-          <div className="p-6 border-t border-gray-200 space-y-4">
-            <div className="flex items-center gap-3 p-2">
-               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-bold text-white shadow-lg">
+          <div className="space-y-4 border-t border-slate-200 p-6">
+            <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+               <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-900 text-lg font-black text-white shadow-lg">
                   {user.name[0]}
                </div>
-               <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate">{user.name}</p>
-                  <p className="text-xs text-secondary font-medium">NGO Administrator</p>
+               <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-900">{user.name}</p>
+                  <p className="mt-1 text-xs font-semibold text-primary">NGO Administrator</p>
                </div>
             </div>
             <button 
               onClick={() => { logout(); router.push('/'); }}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white transition-colors font-bold text-sm shadow-sm shadow-red-500/30"
+              className="flex w-full items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-red-600 to-red-500 py-4 text-sm font-semibold text-red-50 shadow-[0_0_0_rgba(239,68,68,0.45)] transition-all hover:from-red-500 hover:to-red-400 hover:shadow-[0_0_22px_rgba(239,68,68,0.45)]"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="h-4 w-4" />
               <span>Logout</span>
             </button>
           </div>
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 flex flex-col relative overflow-hidden h-full">
-          <header className="h-20 border-b border-gray-200 bg-white/60 backdrop-blur-md px-8 flex items-center justify-between z-30 shrink-0">
-             <div className="flex items-center gap-4">
-                 <button className="md:hidden text-slate-700 p-2 hover:bg-slate-100 rounded-lg" onClick={() => setSidebarOpen(true)}>
-                      <Menu className="w-6 h-6" />
+        <main className="relative flex h-full flex-1 flex-col overflow-hidden">
+          <header className="z-50 flex h-24 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-8 md:px-10">
+             <div className="flex items-center gap-8">
+                 <button className="rounded-xl bg-slate-50 p-3 text-slate-900 transition-colors hover:bg-slate-100 md:hidden" onClick={() => setSidebarOpen(true)}>
+                      <Menu className="h-6 w-6" />
                  </button>
-                 <h1 className="text-xl font-bold tracking-tight text-slate-800 hidden md:block">
-                    {navItems.find(i => i.href === pathname)?.name || 'NGO Console'}
-                 </h1>
+                 <div className="hidden md:block">
+                    <p className="mb-1 text-xs font-medium text-slate-500">NGO Workspace</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                      {navItems.find(i => i.href === pathname)?.name || 'NGO Console'}
+                    </h1>
+                 </div>
              </div>
 
-             <div className="flex items-center gap-6">
+             <div className="flex items-center gap-8">
                   {/* Notifications Bell */}
                   <div className="relative" ref={notifRef}>
                     <button 
                       onClick={openNotifications}
-                      className="relative p-2.5 rounded-xl bg-slate-100 border border-gray-200 text-slate-500 hover:text-slate-700 transition-all"
+                      className={`relative rounded-xl p-3 transition-all ${notifOpen ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'}`}
                     >
-                        <Bell className="w-5 h-5" />
+                        <Bell className="h-5 w-5" />
                         {unreadCount > 0 && (
-                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-secondary text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white">
+                          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-secondary text-[10px] font-black text-white">
                             {unreadCount}
                           </span>
                         )}
@@ -226,7 +233,7 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.97 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute right-0 top-14 w-96 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50"
+                          className="absolute right-0 top-14 z-[100] w-96 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_60px_rgba(0,0,0,0.12)]"
                         >
                           <div className="p-5 border-b border-gray-100 flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -273,16 +280,16 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
                     </AnimatePresence>
                   </div>
 
-                  <div className="hidden sm:flex flex-col items-end">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Local Status</p>
-                      <p className="text-sm font-bold text-primary flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse inline-block"></span> Active
+                  <div className="hidden flex-col items-end sm:flex">
+                      <p className="text-xs font-medium uppercase leading-none tracking-widest text-slate-500">Local Status</p>
+                      <p className="mt-1 flex items-center gap-2 text-sm font-bold text-primary">
+                          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary"></span> Active
                       </p>
                   </div>
              </div>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar relative">
+          <div className="custom-scrollbar relative flex-1 overflow-y-auto bg-slate-50 p-6 md:p-8">
              {children}
           </div>
         </main>

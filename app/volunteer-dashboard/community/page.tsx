@@ -24,9 +24,16 @@ export default function VolunteerCommunityPage() {
       try {
         const [ngosRes, reqsRes] = await Promise.all([
           fetch('/api/ngos'),
-          token ? fetch('/api/ngo-requests', {
-            headers: { Authorization: `Bearer ${token}` }
-          }) : Promise.resolve({ ok: false })
+          token
+            ? fetch('/api/ngo-requests', {
+                headers: { Authorization: `Bearer ${token}` },
+              })
+            : Promise.resolve(
+                new Response(JSON.stringify([]), {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' },
+                })
+              ),
         ]);
         
         const ngosData = await ngosRes.json();

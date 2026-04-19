@@ -228,7 +228,7 @@ export default function NgoDashboardMain() {
           </Link>
         </div>
         <div className="h-[500px] w-full rounded-[1.5rem] overflow-hidden border border-gray-100">
-          <LiveHeatmap />
+          <LiveHeatmap variant="ngo" />
         </div>
       </div>
 

@@ -6,18 +6,7 @@ const UserSchema = new Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ['ngo', 'volunteer'], required: true },
   skills: [{ type: String }],
-  organizationName: { type: String },
-  publicDescription: { type: String },
-  phone: { type: String },
-  website: { type: String },
-  sector: { type: String },
-  city: { type: String },
-  operatingRegions: [{ type: String }],
-  // Notification preferences
-  notifyOnVolunteerJoin:  { type: Boolean, default: true },
-  notifyOnDeadline:       { type: Boolean, default: true },
-  notifyOnCapacityFull:   { type: Boolean, default: true },
-  emailNotifications:     { type: Boolean, default: false },
+  organizationName: { type: String }, // For NGOs
   location: {
     lat:     { type: Number },
     lng:     { type: Number },
@@ -42,5 +31,13 @@ const TaskSchema = new Schema({
   dateTime: { type: Date, required: true }
 }, { timestamps: true });
 
+const NGORequestSchema = new Schema({
+  ngoId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  volunteerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  message: { type: String, default: '' },
+  status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+}, { timestamps: true });
+
 export const User = models.User || model('User', UserSchema);
 export const Task = models.Task || model('Task', TaskSchema);
+export const NGORequest = models.NGORequest || model('NGORequest', NGORequestSchema);

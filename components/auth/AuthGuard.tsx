@@ -8,8 +8,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [authorized, setAuthorized] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    
     // Check if user is authenticated
     if (!token) {
       setAuthorized(false);
@@ -25,6 +28,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       }
     }
   }, [token, user, pathname, router]);
+
+  // Avoid SSR/client mismatches by waiting for client mount first.
+  if (!mounted) {
+    return null;
+  }
 
   if (!authorized) {
     return (

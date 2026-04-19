@@ -3,10 +3,14 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/models';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sahayog_india_super_secret_fallback_key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function PUT(request: Request) {
   try {
+    if (!JWT_SECRET) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -32,15 +36,11 @@ export async function PUT(request: Request) {
     ];
 
     const updateData: any = {};
-    for (const field of ALLOWED_FIELDS) {
-      if (body[field] !== undefined) {
-        updateData[field] = body[field];
-      }
-    }
-
-    if (Object.keys(updateData).length === 0) {
-      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
-    }
+    if (body.name) updateData.name = body.name;
+    if (body.email) updateData.email = body.email;
+    if (body.organizationName) updateData.organizationName = body.organizationName;
+    if (body.publicDescription) updateData.publicDescription = body.publicDescription;
+    if (body.skills) updateData.skills = body.skills;
 
     const updatedUser = await User.findByIdAndUpdate(
       decoded.userId,
@@ -53,22 +53,13 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json({
-      id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      role: updatedUser.role,
-      skills: updatedUser.skills,
-      organizationName: updatedUser.organizationName,
-      publicDescription: updatedUser.publicDescription,
-      phone: updatedUser.phone,
-      website: updatedUser.website,
-      sector: updatedUser.sector,
-      city: updatedUser.city,
-      operatingRegions: updatedUser.operatingRegions,
-      notifyOnVolunteerJoin: updatedUser.notifyOnVolunteerJoin,
-      notifyOnDeadline: updatedUser.notifyOnDeadline,
-      notifyOnCapacityFull: updatedUser.notifyOnCapacityFull,
-      emailNotifications: updatedUser.emailNotifications,
+        id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        skills: updatedUser.skills,
+        organizationName: updatedUser.organizationName,
+        publicDescription: updatedUser.publicDescription
     }, { status: 200 });
 
   } catch (error: any) {

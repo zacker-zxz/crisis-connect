@@ -14,7 +14,16 @@
 }
 
 body {
-  background-color: #0f172a;
-  /* slate-900 */
-  color: white;
+  background-color: #f8fafc;
+  color: #0f172a;
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

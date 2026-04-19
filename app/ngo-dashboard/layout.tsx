@@ -53,9 +53,9 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
           <div className="p-8 flex items-center justify-between">
               <Link href="/" className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-gradient-to-tr from-primary to-secondary rounded-lg flex items-center justify-center font-bold text-white shadow-lg">
-                      Si
+                      CC
                   </div>
-                  <span className="text-xl font-black text-slate-800 tracking-tight">Sahayog</span>
+                  <span className="text-xl font-black text-slate-800 tracking-tight">Crisis Connect</span>
               </Link>
             <button className="md:hidden text-slate-500 hover:text-slate-800" onClick={() => setSidebarOpen(false)}>
               <X className="w-6 h-6" />

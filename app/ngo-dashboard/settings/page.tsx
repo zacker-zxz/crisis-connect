@@ -9,19 +9,57 @@ import {
   Globe, 
   Save,
   Trash2,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 export default function SettingsPage() {
-  const { user } = useAuthStore();
+  const { user, token, updateUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState('profile');
+  const [loading, setLoading] = useState(false);
+
+  // Form State
+  const [name, setName] = useState(user?.name || '');
+  const [organizationName, setOrganizationName] = useState(user?.organizationName || '');
+  const [publicDescription, setPublicDescription] = useState(user?.publicDescription || 'Leading social impact initiatives focused on localized community needs.');
 
   const tabs = [
     { id: 'profile', name: 'Profile Information', icon: User },
     { id: 'security', name: 'Security & Access', icon: Shield },
     { id: 'notifications', name: 'Communications', icon: Bell },
   ];
+
+  const handleSave = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name,
+          organizationName,
+          publicDescription
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        updateUser(data);
+        alert('Settings updated successfully!');
+      } else {
+        alert(data.error || 'Failed to update settings');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto pb-20">
@@ -61,17 +99,14 @@ export default function SettingsPage() {
               <div className="space-y-8">
                 <div>
                    <h3 className="text-2xl font-black text-white mb-2">Organization Profile</h3>
-                   <p className="text-gray-400">Update your public identity on the Sahayog Network.</p>
+                   <p className="text-gray-400">Update your public identity on Crisis Connect.</p>
                 </div>
 
                 <div className="flex flex-col md:flex-row items-center gap-8 py-6 border-y border-white/5">
                     <div className="relative group">
                         <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-tr from-primary to-secondary flex items-center justify-center font-black text-white text-3xl shadow-xl">
-                            {user?.name[0]}
+                            {user?.name?.[0] || 'O'}
                         </div>
-                        <button className="absolute -bottom-2 -right-2 p-2 bg-slate-900 border border-white/10 rounded-xl text-primary hover:scale-110 transition-transform shadow-lg">
-                           <Save className="w-4 h-4" />
-                        </button>
                     </div>
                     <div className="flex-1 text-center md:text-left">
                         <p className="text-white font-bold text-lg">{user?.name}</p>
@@ -82,22 +117,27 @@ export default function SettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                     <div className="space-y-2">
                         <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Entity Name</label>
-                        <input type="text" defaultValue={user?.name} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-primary transition" />
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-primary transition" />
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Operating Sector</label>
-                        <select className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-primary transition appearance-none">
-                            <option>Disaster Relief</option>
-                            <option>Healthcare</option>
-                            <option>Education</option>
-                            <option>Environment</option>
+                        <select 
+                          value={organizationName} 
+                          onChange={(e) => setOrganizationName(e.target.value)}
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-primary transition appearance-none"
+                        >
+                            <option value="">Select Sector</option>
+                            <option value="Disaster Relief">Disaster Relief</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Education">Education</option>
+                            <option value="Environment">Environment</option>
                         </select>
                     </div>
                 </div>
 
                 <div className="space-y-2">
                     <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Public Description</label>
-                    <textarea rows={4} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-primary transition resize-none" defaultValue="Leading social impact initiatives focused on localized community needs." />
+                    <textarea value={publicDescription} onChange={(e) => setPublicDescription(e.target.value)} rows={4} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-primary transition resize-none" />
                 </div>
               </div>
             )}
@@ -126,7 +166,7 @@ export default function SettingsPage() {
                             <Globe className="w-6 h-6 text-primary" />
                             <div>
                                 <p className="text-white font-bold text-sm">API Integration Key</p>
-                                <p className="text-xs text-gray-500">Connect Sahayog to your internal CRM.</p>
+                                <p className="text-xs text-gray-500">Connect Crisis Connect to your internal CRM.</p>
                             </div>
                         </div>
                         <button className="text-xs font-black text-primary uppercase tracking-widest hover:underline">Revoke</button>
@@ -145,8 +185,12 @@ export default function SettingsPage() {
             )}
 
             <div className="flex justify-end pt-10">
-               <button className="bg-primary hover:bg-primary/90 text-white font-black px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 uppercase tracking-widest text-sm">
-                  <Save className="w-5 h-5" /> Update Configuration
+               <button 
+                 onClick={handleSave}
+                 disabled={loading}
+                 className="bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black px-10 py-4 rounded-2xl shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-2 uppercase tracking-widest text-sm"
+               >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} Update Configuration
                </button>
             </div>
           </motion.div>

@@ -44,13 +44,13 @@ export default function FeatureShowcase() {
       title: "Impact Verification",
       description: "Every deployment is tracked and verified. Build an institutional-grade reporting system for social impact and reliability.",
       icon: ShieldCheck,
-      color: "text-emerald-400",
-      bg: "bg-emerald-400/10"
+      color: "text-emerald-600",
+      bg: "bg-emerald-100"
     }
   ];
 
   return (
-    <div ref={containerRef} className="relative h-[400vh] bg-slate-950">
+    <div ref={containerRef} className="relative h-[400vh] bg-slate-50">
       <div className="sticky top-0 h-screen flex flex-col items-center justify-center overflow-hidden">
         
         {/* Title Section that fades out */}
@@ -58,8 +58,8 @@ export default function FeatureShowcase() {
           style={{ opacity: useTransform(smoothProgress, [0, 0.1], [1, 0]) }}
           className="absolute top-20 text-center"
         >
-          <h2 className="text-5xl font-black text-white mb-4">The Orchestration Engine</h2>
-          <p className="text-gray-500">Scroll to see the engine in action</p>
+          <h2 className="text-5xl font-black text-slate-800 mb-4">The Orchestration Engine</h2>
+          <p className="text-slate-500">Scroll to see the engine in action</p>
         </motion.div>
 
         <div className="container mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-20">
@@ -74,11 +74,11 @@ export default function FeatureShowcase() {
                    viewport={{ margin: "-40%" }}
                    className="h-screen flex flex-col justify-center py-20"
                 >
-                   <div className={`w-16 h-16 ${f.bg} rounded-2xl flex items-center justify-center ${f.color} mb-8 border border-white/5 shadow-xl`}>
+                   <div className={`w-16 h-16 ${f.bg} rounded-2xl flex items-center justify-center ${f.color} mb-8 border border-gray-200 shadow-sm`}>
                       <f.icon className="w-8 h-8" />
                    </div>
-                   <h3 className="text-4xl font-bold text-white mb-6 uppercase tracking-tight">{f.title}</h3>
-                   <p className="text-xl text-gray-400 leading-relaxed font-light">{f.description}</p>
+                   <h3 className="text-4xl font-bold text-slate-800 mb-6 uppercase tracking-tight">{f.title}</h3>
+                   <p className="text-xl text-slate-500 leading-relaxed font-light">{f.description}</p>
                 </motion.div>
              ))}
           </div>
@@ -89,48 +89,48 @@ export default function FeatureShowcase() {
               style={{ 
                 rotateX: frameRotateX,
                 scale: frameScale,
-                boxShadow: "0 50px 100px -20px rgba(0,0,0,0.5)"
+                boxShadow: "0 50px 100px -20px rgba(0,0,0,0.1)"
               }}
-              className="glass-card w-full aspect-[4/3] rounded-[3rem] border border-white/10 p-4 bg-slate-900/50 backdrop-blur-xl"
+              className="glass-card w-full aspect-[4/3] rounded-[3rem] border border-gray-200 p-4 bg-white/70 backdrop-blur-xl"
             >
-               <div className="w-full h-full bg-slate-950 rounded-[2.5rem] overflow-hidden relative shadow-inner">
+               <div className="w-full h-full bg-slate-50 rounded-[2.5rem] overflow-hidden relative shadow-inner">
                   
                   {/* Step 1: Map View */}
                   <motion.div style={{ opacity: stepOpacity1 }} className="absolute inset-0 p-8 flex flex-col gap-6">
                       <div className="flex justify-between items-center">
-                         <div className="h-6 w-32 bg-white/5 rounded-full border border-white/10"></div>
+                         <div className="h-6 w-32 bg-slate-200 rounded-full"></div>
                          <div className="h-8 w-8 bg-primary/20 rounded-lg border border-primary/20"></div>
                       </div>
-                      <div className="flex-1 bg-white/5 rounded-3xl border border-white/5 relative overflow-hidden">
-                         <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80" className="w-full h-full object-cover opacity-40 grayscale" />
+                      <div className="flex-1 bg-slate-100 rounded-3xl border border-slate-200 relative overflow-hidden">
+                         <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80" className="w-full h-full object-cover opacity-50" />
                          <motion.div 
                             animate={{ scale: [1, 1.2, 1] }}
                             transition={{ repeat: Infinity, duration: 2 }}
-                            className="absolute top-1/2 left-1/3 w-12 h-12 bg-primary/30 rounded-full border border-primary flex items-center justify-center"
+                            className="absolute top-1/2 left-1/3 w-12 h-12 bg-primary/20 rounded-full border-2 border-primary flex items-center justify-center"
                           >
-                            <div className="w-4 h-4 bg-primary rounded-full shadow-[0_0_20px_#14b8a6]"></div>
+                            <div className="w-4 h-4 bg-primary rounded-full shadow-[0_0_20px_#0d9488]"></div>
                          </motion.div>
                          <motion.div 
                             animate={{ scale: [1.2, 1, 1.2] }}
                             transition={{ repeat: Infinity, duration: 3 }}
-                            className="absolute top-1/4 right-1/4 w-16 h-16 bg-secondary/30 rounded-full border border-secondary flex items-center justify-center"
+                            className="absolute top-1/4 right-1/4 w-16 h-16 bg-secondary/20 rounded-full border-2 border-secondary flex items-center justify-center"
                           >
-                            <div className="w-6 h-6 bg-secondary rounded-full shadow-[0_0_20px_#f59e0b]"></div>
+                            <div className="w-6 h-6 bg-secondary rounded-full shadow-[0_0_20px_#ea580c]"></div>
                          </motion.div>
                       </div>
                   </motion.div>
 
                   {/* Step 2: Matchmaking */}
                   <motion.div style={{ opacity: stepOpacity2 }} className="absolute inset-0 p-10 flex flex-col justify-center items-center gap-8">
-                     <div className="w-24 h-24 bg-secondary/20 rounded-full flex items-center justify-center border-2 border-dashed border-secondary animate-spin-slow">
+                     <div className="w-24 h-24 bg-secondary/10 rounded-full flex items-center justify-center border-2 border-dashed border-secondary animate-spin-slow">
                         <Zap className="w-10 h-10 text-secondary" />
                      </div>
                      <div className="space-y-4 w-full px-10">
                         {[1,2,3].map(i => (
-                           <motion.div key={i} className="h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between px-6">
+                           <motion.div key={i} className="h-14 bg-slate-100 border border-slate-200 rounded-2xl flex items-center justify-between px-6">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-slate-800 rounded-full"></div>
-                                <div className="h-3 w-20 bg-white/20 rounded"></div>
+                                <div className="w-8 h-8 bg-slate-200 rounded-full"></div>
+                                <div className="h-3 w-20 bg-slate-300 rounded"></div>
                               </div>
                               <div className="text-[10px] font-black text-secondary">MATCH FOUND</div>
                            </motion.div>
@@ -143,13 +143,13 @@ export default function FeatureShowcase() {
                       <motion.div 
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="w-32 h-32 bg-emerald-500/20 rounded-[2.5rem] flex items-center justify-center border-2 border-emerald-500/30 mb-8"
+                        className="w-32 h-32 bg-emerald-100 rounded-[2.5rem] flex items-center justify-center border-2 border-emerald-300 mb-8"
                       >
-                         <ShieldCheck className="w-16 h-16 text-emerald-400" />
+                         <ShieldCheck className="w-16 h-16 text-emerald-600" />
                       </motion.div>
-                      <h4 className="text-3xl font-black text-white mb-4 italic uppercase">MISSION SECURED</h4>
-                      <p className="text-gray-500">Orchestration Successfully Completed</p>
-                      <div className="mt-10 h-1 w-48 bg-white/5 rounded-full overflow-hidden">
+                      <h4 className="text-3xl font-black text-slate-800 mb-4 italic uppercase">MISSION SECURED</h4>
+                      <p className="text-slate-500">Orchestration Successfully Completed</p>
+                      <div className="mt-10 h-1 w-48 bg-slate-200 rounded-full overflow-hidden">
                          <motion.div 
                             initial={{ x: "-100%" }}
                             animate={{ x: "100%" }}

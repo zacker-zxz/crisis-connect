@@ -17,8 +17,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased bg-slate-900 text-white min-h-screen flex flex-col relative overflow-x-hidden`}>
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-slate-900 to-tertiary/20 z-[-1] fixed" />
+      <body className={`${inter.variable} font-sans antialiased bg-slate-50 text-slate-800 min-h-screen flex flex-col relative overflow-x-hidden`}>
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-50 via-white to-orange-50 z-[-1] fixed" />
         <ClientLayoutWrapper>
           {children}
         </ClientLayoutWrapper>

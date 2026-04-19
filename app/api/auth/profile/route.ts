@@ -24,13 +24,23 @@ export async function PUT(request: Request) {
     
     const body = await request.json();
     
-    // Only allow updating certain fields
+    // Allowed fields to update — profile + new settings fields
+    const ALLOWED_FIELDS = [
+      'name', 'email', 'organizationName', 'publicDescription',
+      'skills', 'phone', 'website', 'sector', 'city', 'operatingRegions',
+      'notifyOnVolunteerJoin', 'notifyOnDeadline', 'notifyOnCapacityFull', 'emailNotifications'
+    ];
+
     const updateData: any = {};
-    if (body.name) updateData.name = body.name;
-    if (body.email) updateData.email = body.email;
-    if (body.organizationName) updateData.organizationName = body.organizationName;
-    if (body.publicDescription) updateData.publicDescription = body.publicDescription;
-    if (body.skills) updateData.skills = body.skills;
+    for (const field of ALLOWED_FIELDS) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
 
     const updatedUser = await User.findByIdAndUpdate(
       decoded.userId,
@@ -43,14 +53,24 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json({
-        id: updatedUser._id,
-        name: updatedUser.name,
-        email: updatedUser.email,
-        role: updatedUser.role,
-        skills: updatedUser.skills,
-        organizationName: updatedUser.organizationName,
-        publicDescription: updatedUser.publicDescription
+      id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      skills: updatedUser.skills,
+      organizationName: updatedUser.organizationName,
+      publicDescription: updatedUser.publicDescription,
+      phone: updatedUser.phone,
+      website: updatedUser.website,
+      sector: updatedUser.sector,
+      city: updatedUser.city,
+      operatingRegions: updatedUser.operatingRegions,
+      notifyOnVolunteerJoin: updatedUser.notifyOnVolunteerJoin,
+      notifyOnDeadline: updatedUser.notifyOnDeadline,
+      notifyOnCapacityFull: updatedUser.notifyOnCapacityFull,
+      emailNotifications: updatedUser.emailNotifications,
     }, { status: 200 });
+
   } catch (error: any) {
     console.error('Update profile error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

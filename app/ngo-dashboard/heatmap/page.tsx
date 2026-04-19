@@ -12,8 +12,8 @@ export default function NgoHeatmapPage() {
         className="flex justify-between items-end shrink-0"
       >
         <div>
-          <h2 className="text-3xl font-black text-white tracking-tight">Geospatial Intelligence</h2>
-          <p className="text-gray-400">Monitoring real-time community needs and heat clusters.</p>
+          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Geospatial Intelligence</h2>
+          <p className="text-slate-500">Monitoring real-time community needs and heat clusters.</p>
         </div>
       </motion.div>
       <motion.div 

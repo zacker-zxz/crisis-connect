@@ -1,7 +1,7 @@
+@import 'mapbox-gl/dist/mapbox-gl.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 :root {
   --primary-rgb: 20, 184, 166;
   --secondary-rgb: 245, 158, 11;

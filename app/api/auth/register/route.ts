@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     await connectToDatabase();
     const body = await request.json();
-    const { name, email, password, role, skills, organizationName } = body;
+    const { name, email, password, role, skills, organizationName, availability, profileImageUrl } = body;
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -26,6 +26,8 @@ export async function POST(request: Request) {
       password: hashedPassword,
       role,
       skills: skills || [],
+      availability: Array.isArray(availability) ? availability : [],
+      profileImageUrl: profileImageUrl || undefined,
       organizationName: role === 'ngo' ? organizationName : undefined
     });
 

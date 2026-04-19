@@ -9,13 +9,20 @@ import {
   Calendar, 
   Save,
   CheckCircle2,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 export default function VolunteerSettingsPage() {
-  const { user } = useAuthStore();
+  const { user, token, updateUser } = useAuthStore();
   const [activeTab, setActiveTab] = useState('account');
+  const [loading, setLoading] = useState(false);
+
+  // Form State
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [skills, setSkills] = useState<string[]>(user?.skills || []);
 
   const tabs = [
     { id: 'account', name: 'Identity & Account', icon: User },
@@ -23,6 +30,45 @@ export default function VolunteerSettingsPage() {
     { id: 'availability', name: 'Mission Availability', icon: Calendar },
     { id: 'notifications', name: 'Alert Settings', icon: Bell },
   ];
+
+  const toggleSkill = (skill: string) => {
+    setSkills(prev => 
+      prev.includes(skill) 
+        ? prev.filter(s => s !== skill) 
+        : [...prev, skill]
+    );
+  };
+
+  const handleSave = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          skills
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        updateUser(data);
+        alert('Settings updated successfully!');
+      } else {
+        alert(data.error || 'Failed to update settings');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto pb-20">
@@ -68,11 +114,8 @@ export default function VolunteerSettingsPage() {
                 <div className="flex flex-col md:flex-row items-center gap-8 py-6 border-y border-white/5">
                     <div className="relative group">
                         <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-secondary to-primary flex items-center justify-center font-black text-white text-3xl shadow-xl">
-                            {user?.name[0]}
+                            {user?.name?.[0] || 'V'}
                         </div>
-                        <button className="absolute -bottom-1 -right-1 p-2 bg-slate-900 border border-white/10 rounded-full text-secondary hover:scale-110 transition-transform shadow-lg">
-                           <Save className="w-4 h-4" />
-                        </button>
                     </div>
                     <div className="flex-1 text-center md:text-left">
                         <p className="text-white font-bold text-lg">{user?.name}</p>
@@ -86,11 +129,11 @@ export default function VolunteerSettingsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                     <div className="space-y-2">
                         <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
-                        <input type="text" defaultValue={user?.name} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-secondary transition" />
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-secondary transition" />
                     </div>
                     <div className="space-y-2">
                         <label className="text-xs font-black text-gray-500 uppercase tracking-widest ml-1">Contact Email</label>
-                        <input type="email" defaultValue={user?.email} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-secondary transition" />
+                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm focus:outline-none focus:border-secondary transition" />
                     </div>
                 </div>
               </div>
@@ -106,12 +149,16 @@ export default function VolunteerSettingsPage() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {['First Aid', 'Crisis Management', 'Logistics', 'Driving', 'Communications', 'Medical'].map((skill) => (
-                            <div key={skill} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between group hover:border-secondary/30 transition-all cursor-pointer">
+                            <div 
+                              key={skill} 
+                              onClick={() => toggleSkill(skill)}
+                              className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-between group hover:border-secondary/30 transition-all cursor-pointer"
+                            >
                                 <span className="text-sm font-bold text-white uppercase tracking-wide">{skill}</span>
-                                <div className={`w-5 h-5 rounded flex items-center justify-center border ${
-                                    user?.skills?.includes(skill) ? 'bg-secondary border-secondary text-white' : 'border-white/10'
+                                <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${
+                                    skills.includes(skill) ? 'bg-secondary border-secondary text-white' : 'border-white/10 group-hover:border-white/30'
                                 }`}>
-                                    {user?.skills?.includes(skill) && <CheckCircle2 className="w-4 h-4" />}
+                                    {skills.includes(skill) && <CheckCircle2 className="w-4 h-4" />}
                                 </div>
                             </div>
                         ))}
@@ -128,8 +175,12 @@ export default function VolunteerSettingsPage() {
             )}
 
             <div className="flex justify-end pt-10">
-               <button className="bg-secondary hover:bg-secondary/90 text-white font-black px-10 py-4 rounded-2xl shadow-[0_0_30px_rgba(236,72,153,0.2)] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 uppercase tracking-widest text-sm">
-                  <Save className="w-5 h-5" /> Save Changes
+               <button 
+                 onClick={handleSave} 
+                 disabled={loading}
+                 className="bg-secondary hover:bg-secondary/90 disabled:opacity-50 text-white font-black px-10 py-4 rounded-2xl shadow-[0_0_30px_rgba(236,72,153,0.2)] transition-all hover:scale-105 active:scale-95 flex items-center gap-2 uppercase tracking-widest text-sm"
+               >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} Save Changes
                </button>
             </div>
           </motion.div>

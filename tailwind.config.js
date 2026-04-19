@@ -1,19 +1,19 @@
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
-        primary: "#008080",
-        secondary: "#FF8C00",
-        tertiary: "#A96039",
-        neutralText: "#454747",
+        primary: "#14b8a6", // Teal 500 (modified for cooler glassmorphism)
+        secondary: "#f59e0b", // Amber 500
+        tertiary: "#ef4444", // Red 500
+        neutralText: "#9ca3af",
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['var(--font-inter)'],
       }
     },
   },

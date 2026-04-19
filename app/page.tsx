@@ -44,13 +44,13 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-6">
-            <Link href="/signup?role=ngo" className="group relative px-8 py-4 bg-primary rounded-xl overflow-hidden shadow-lg transition-transform hover:scale-105 active:scale-95">
+            <Link href="/signup?role=ngo" className="group relative px-8 py-4 bg-primary rounded-2xl overflow-hidden shadow-[0_10px_25px_-5px_rgba(var(--primary-rgb),0.4)] hover:shadow-[0_20px_35px_-10px_rgba(var(--primary-rgb),0.5)] transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95">
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-              <span className="relative text-white font-bold text-lg">Join as NGO</span>
+              <span className="relative text-white font-bold text-lg flex items-center gap-2">Join as NGO</span>
             </Link>
-            <Link href="/signup?role=volunteer" className="group relative px-8 py-4 bg-secondary rounded-xl overflow-hidden shadow-lg transition-transform hover:scale-105 active:scale-95">
+            <Link href="/signup?role=volunteer" className="group relative px-8 py-4 bg-secondary rounded-2xl overflow-hidden shadow-[0_10px_25px_-5px_rgba(var(--secondary-rgb),0.4)] hover:shadow-[0_20px_35px_-10px_rgba(var(--secondary-rgb),0.5)] transition-all duration-300 hover:-translate-y-1 hover:scale-105 active:scale-95">
               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
-              <span className="relative text-white font-bold text-lg">Volunteer Now</span>
+              <span className="relative text-white font-bold text-lg flex items-center gap-2">Volunteer Now</span>
             </Link>
           </div>
         </motion.div>
@@ -76,19 +76,19 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="glass-card p-10 rounded-3xl relative overflow-hidden group"
+              className="glass-card p-10 rounded-3xl relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98]"
             >
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-30 group-hover:scale-110 transition-all duration-500">
                 <Users className="w-32 h-32 text-secondary" />
               </div>
               <h3 className="text-3xl font-bold text-secondary mb-4">The Volunteer</h3>
               <p className="text-slate-600 text-lg mb-6 leading-relaxed">
-                Sign up, set your availability, list your specific skills (medical, logistics, teaching), and get alerted instantly to local opportunities where your exact help is needed.
+                Sign up, set your availability, list your specific skills (medical, logistics, teaching), and get alerted instantly to local opportunities where your help is needed.
               </p>
               <ul className="space-y-4">
-                <li className="flex items-center gap-3 text-slate-700"><CheckCircle className="text-secondary w-5 h-5"/> Skill-based matching</li>
-                <li className="flex items-center gap-3 text-slate-700"><CheckCircle className="text-secondary w-5 h-5"/> Real-time push alerts</li>
-                <li className="flex items-center gap-3 text-slate-700"><CheckCircle className="text-secondary w-5 h-5"/> Localized impact tracking</li>
+                <li className="flex items-center gap-3 text-slate-700 font-medium group-hover:translate-x-1 transition-transform"><CheckCircle className="text-secondary w-5 h-5"/> Skill-based matching</li>
+                <li className="flex items-center gap-3 text-slate-700 font-medium group-hover:translate-x-1 transition-transform delay-75"><CheckCircle className="text-secondary w-5 h-5"/> Real-time push alerts</li>
+                <li className="flex items-center gap-3 text-slate-700 font-medium group-hover:translate-x-1 transition-transform delay-150"><CheckCircle className="text-secondary w-5 h-5"/> Localized impact tracking</li>
               </ul>
             </motion.div>
 
@@ -97,9 +97,9 @@ export default function Home() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, margin: "-100px" }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="glass-card p-10 rounded-3xl relative overflow-hidden group"
+              className="glass-card p-10 rounded-3xl relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98]"
             >
-              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-30 group-hover:scale-110 transition-all duration-500">
                 <Target className="w-32 h-32 text-primary" />
               </div>
               <h3 className="text-3xl font-bold text-primary mb-4">The NGO Lead</h3>
@@ -107,9 +107,9 @@ export default function Home() {
                 Post requirements instantly, manage active volunteer teams on a live dashboard, and seamlessly deploy qualified people to urgent tasks without administrative bottlenecks.
               </p>
               <ul className="space-y-4">
-                <li className="flex items-center gap-3 text-slate-700"><CheckCircle className="text-primary w-5 h-5"/> Live task deployment</li>
-                <li className="flex items-center gap-3 text-slate-700"><CheckCircle className="text-primary w-5 h-5"/> Automated skill filtration</li>
-                <li className="flex items-center gap-3 text-slate-700"><CheckCircle className="text-primary w-5 h-5"/> Live tracking dashboard</li>
+                <li className="flex items-center gap-3 text-slate-700 font-medium group-hover:translate-x-1 transition-transform"><CheckCircle className="text-primary w-5 h-5"/> Live task deployment</li>
+                <li className="flex items-center gap-3 text-slate-700 font-medium group-hover:translate-x-1 transition-transform delay-75"><CheckCircle className="text-primary w-5 h-5"/> Automated skill filtration</li>
+                <li className="flex items-center gap-3 text-slate-700 font-medium group-hover:translate-x-1 transition-transform delay-150"><CheckCircle className="text-primary w-5 h-5"/> Live tracking dashboard</li>
               </ul>
             </motion.div>
           </div>
@@ -119,12 +119,12 @@ export default function Home() {
       {/* Smart Features (Scroll Animation) */}
       <FeatureShowcase />
 
-      {/* Impact Stories – Full Screen */}
-      <section id="impact" className="min-h-screen flex items-center py-24 px-4 relative bg-white">
+      {/* Impact Stories */}
+      <section id="impact" className="py-20 px-4 mt-8 relative bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-slate-800 mb-4">Impact Stories</h2>
-            <p className="text-slate-500">See how Sahayog India is making a difference.</p>
+            <p className="text-slate-500">See how Crisis Connect is making a difference.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {reviews.map((review, i) => (
@@ -156,8 +156,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Contact Section – Full Screen */}
-      <section id="contact" className="min-h-screen flex items-center py-24 px-4 relative bg-gradient-to-b from-white to-slate-50">
+      {/* Contact Section */}
+      <section id="contact" className="py-20 px-4 relative bg-gradient-to-b from-white to-slate-50">
         <div className="container mx-auto max-w-4xl glass-card rounded-3xl p-8 md:p-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             <div>
@@ -166,11 +166,11 @@ export default function Home() {
               <div className="space-y-6">
                 <div className="flex items-center gap-4 text-slate-600">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20"><Mail className="w-5 h-5 text-primary" /></div>
-                  contact@sahayogindia.org
+                  contact@crisisconnect.org
                 </div>
                 <div className="flex items-center gap-4 text-slate-600">
                   <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center border border-secondary/20"><Phone className="w-5 h-5 text-secondary" /></div>
-                  1-800-SAHAYOG
+                  1-800-CRISIS
                 </div>
               </div>
             </div>
@@ -203,8 +203,8 @@ function CheckCircle({ className }: { className?: string }) {
 const reviews = [
   {
     name: "Dr. Ananya Sharma",
-    role: "NGO Directo, Mumbai",
-    text: "Sahayog India completely changed how we respond to floods. We used to spend hours calling volunteers. Now, we pinpoint the need on the map and the right people show up."
+    role: "NGO Director, Mumbai",
+    text: "Crisis Connect completely changed how we respond to floods. We used to spend hours calling volunteers. Now, we pinpoint the need on the map and the right people show up."
   },
   {
     name: "Rahul Verma",

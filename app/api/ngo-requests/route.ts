@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { NGORequest, User } from '@/models';
+import { NGORequest, User, Notification } from '@/models';
 import { env } from '@/lib/env';
 import { getAuthToken, verifyAuthToken } from '@/lib/auth';
 
@@ -102,21 +102,48 @@ export async function PUT(request: Request) {
     }
     
     const body = await request.json();
-    const { requestId, status } = body;
+    const { requestId, status, reason } = body;
     
     if (!requestId || !status) return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     
     await connectToDatabase();
     
-    const update = await NGORequest.findOneAndUpdate(
-      { _id: requestId, ngoId: decoded.userId },
-      { status },
-      { new: true }
-    );
-    
-    if (!update) return NextResponse.json({ error: 'Request not found' }, { status: 404 });
-    
-    return NextResponse.json(update);
+    const ngo = await User.findById(decoded.userId);
+    const ngoName = ngo?.organizationName || ngo?.name || 'an NGO';
+
+    const reqDoc = await NGORequest.findOne({ _id: requestId, ngoId: decoded.userId });
+    if (!reqDoc) return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+
+    if (status === 'Approved') {
+      const update = await NGORequest.findByIdAndUpdate(
+        requestId,
+        { status },
+        { new: true }
+      );
+      
+      await Notification.create({
+        userId: reqDoc.volunteerId,
+        title: 'Join Request Approved',
+        message: `Welcome to the team! ${ngoName} has accepted your request to join.`,
+        type: 'join'
+      });
+
+      return NextResponse.json(update);
+    } 
+    else if (status === 'Rejected') {
+      await Notification.create({
+        userId: reqDoc.volunteerId,
+        title: 'Join Request Update',
+        message: `We appreciate your interest in joining ${ngoName}. After careful review, we cannot accept your request at this time. Reason: ${reason || 'Capacity reached'}. Please keep training and feel free to re-apply in the future!`,
+        type: 'alert'
+      });
+
+      // Automatically delete the request so the volunteer can re-apply and it disappears from their pending list
+      await NGORequest.findByIdAndDelete(requestId);
+      return NextResponse.json({ success: true, deleted: true });
+    }
+
+    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   } catch (error) {
     console.error('Update NGO requests error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

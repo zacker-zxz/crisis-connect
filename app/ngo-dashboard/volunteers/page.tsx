@@ -84,6 +84,8 @@ export default function VolunteersPage() {
   const [selected, setSelected] = useState<Volunteer | null>(null);
   const [activeTab, setActiveTab] = useState<'network' | 'requests'>('network');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [rejectingRequestId, setRejectingRequestId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const token = useAuthStore((s) => s.token);
 
   const fetchRequests = useCallback(async () => {
@@ -113,7 +115,7 @@ export default function VolunteersPage() {
     fetchRequests().finally(() => setLoading(false));
   }, [token, fetchRequests]);
 
-  const handleRequestAction = async (requestId: string, status: string) => {
+  const handleRequestAction = async (requestId: string, status: string, reason?: string) => {
     if (!token) return;
     setActionLoading(requestId);
     try {
@@ -123,7 +125,7 @@ export default function VolunteersPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ requestId, status }),
+        body: JSON.stringify({ requestId, status, reason }),
       });
       if (res.ok) {
         await fetchRequests();
@@ -231,14 +233,17 @@ export default function VolunteersPage() {
                   <button 
                     onClick={() => handleRequestAction(req._id, 'Approved')}
                     disabled={actionLoading === req._id}
-                    className="py-3 rounded-2xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition shadow-sm"
+                    className="py-3 rounded-2xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition shadow-sm disabled:opacity-50"
                   >
                     Accept
                   </button>
                   <button 
-                    onClick={() => handleRequestAction(req._id, 'Rejected')}
+                    onClick={() => {
+                      setRejectingRequestId(req._id);
+                      setRejectionReason('');
+                    }}
                     disabled={actionLoading === req._id}
-                    className="py-3 rounded-2xl bg-rose-50 text-rose-500 font-bold text-sm hover:bg-rose-100 transition"
+                    className="py-3 rounded-2xl bg-rose-50 text-rose-500 font-bold text-sm hover:bg-rose-100 transition disabled:opacity-50"
                   >
                     Decline
                   </button>
@@ -411,6 +416,64 @@ export default function VolunteersPage() {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Rejection Modal */}
+      <AnimatePresence>
+        {rejectingRequestId && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
+              onClick={() => setRejectingRequestId(null)}
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md border border-gray-200 p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-black text-slate-800">Decline Request</h3>
+                  <button onClick={() => setRejectingRequestId(null)} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-sm text-slate-500 mb-6">
+                  Please provide a reason for declining this request. The volunteer will receive a polite notification along with your feedback, and they will be able to re-apply later.
+                </p>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="e.g. Currently we have reached our capacity for volunteers."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 mb-6 min-h-[100px]"
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setRejectingRequestId(null)}
+                    className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm hover:bg-slate-200 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleRequestAction(rejectingRequestId, 'Rejected', rejectionReason);
+                      setRejectingRequestId(null);
+                    }}
+                    disabled={!rejectionReason.trim()}
+                    className="flex-1 py-3 rounded-xl bg-rose-500 text-white font-bold text-sm hover:bg-rose-600 transition disabled:opacity-50"
+                  >
+                    Confirm Decline
+                  </button>
                 </div>
               </div>
             </motion.div>

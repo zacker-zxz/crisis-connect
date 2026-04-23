@@ -11,8 +11,10 @@ import Map, {
   Popup,
 } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation, X, Clock, AlertTriangle, Ruler, Activity } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/store/authStore";
+import { useNotificationStore } from "@/store/notificationStore";
 
 const FALLBACK_MAPBOX_TOKEN =
   "pk.eyJ1IjoidGVqYXMwMzA4MDYiLCJhIjoiY21vNXNycDRhMTVwcjJ0czR3cXE3dW5uMyJ9.H8yLp4vnqiO54TYKJ4WsRg";
@@ -23,7 +25,12 @@ interface Task {
   _id: string;
   ngoId?: string | { toString(): string };
   title: string;
+  description?: string;
   priority?: string;
+  requiredVolunteers?: number;
+  filledVolunteers?: number;
+  createdAt?: string;
+  requiredSkills?: string[];
   location: {
     lat: number;
     lng: number;
@@ -34,6 +41,8 @@ interface Task {
 
 interface LiveHeatmapProps {
   variant?: LiveHeatmapVariant;
+  selectedTaskId?: string;
+  onAcceptTask?: (task: any) => void | Promise<void>;
 }
 
 const MOCK_TASKS: Task[] = [
@@ -105,8 +114,25 @@ function pinClasses(p?: string): string {
   }
 }
 
-export default function LiveHeatmap({ variant = "volunteer" }: LiveHeatmapProps) {
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number): string {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c;
+  return d.toFixed(1);
+}
+
+export default function LiveHeatmap({ variant = "volunteer", selectedTaskId, onAcceptTask }: LiveHeatmapProps) {
   const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const addNotification = useNotificationStore(s => s.addNotification);
   const mapRef = useRef<MapRef>(null);
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || FALLBACK_MAPBOX_TOKEN;
   const hasMapToken = Boolean(mapboxToken?.length);
@@ -119,11 +145,14 @@ export default function LiveHeatmap({ variant = "volunteer" }: LiveHeatmapProps)
     latitude: 19.076,
     zoom: 11,
   });
+  const [userLoc, setUserLoc] = useState<{lat: number, lng: number} | null>(null);
+  const [acceptingMapTask, setAcceptingMapTask] = useState(false);
 
   const goMyLoc = useCallback(() => {
     if (!("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition((position) => {
       const { longitude, latitude } = position.coords;
+      setUserLoc({ lat: latitude, lng: longitude });
       setViewState((v) => ({ ...v, longitude, latitude, zoom: 13 }));
       mapRef.current?.flyTo({
         center: [longitude, latitude],
@@ -157,6 +186,22 @@ export default function LiveHeatmap({ variant = "volunteer" }: LiveHeatmapProps)
     };
     fetchTasks();
   }, []);
+
+  useEffect(() => {
+    if (selectedTaskId && tasks.length > 0) {
+      const task = tasks.find(t => t._id === selectedTaskId);
+      if (task && task.location.lat && task.location.lng) {
+        setSelected(task);
+        const { lng, lat } = task.location;
+        setViewState((v) => ({ ...v, longitude: lng, latitude: lat, zoom: 14 }));
+        mapRef.current?.flyTo({
+          center: [lng, lat],
+          zoom: 14,
+          duration: 1500,
+        });
+      }
+    }
+  }, [selectedTaskId, tasks]);
 
   const userId = user ? String(user.id || user._id || "") : "";
 
@@ -362,39 +407,128 @@ export default function LiveHeatmap({ variant = "volunteer" }: LiveHeatmapProps)
         </Source>
 
         {variant === "ngo" ? renderNgoMarkers() : renderVolunteerMarkers()}
-
-        {selected && (
-          <Popup
-            longitude={selected.location.lng}
-            latitude={selected.location.lat}
-            anchor="top"
-            onClose={() => {
-              setSelected(null);
-              setSelectedIsMine(false);
-            }}
-            closeButton
-            closeOnClick={false}
-            maxWidth="280px"
-          >
-            <div className="min-w-[220px] rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-800 shadow-lg">
-              {variant === "ngo" && selectedIsMine && (
-                <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-primary">
-                  Your mission
-                </p>
-              )}
-              <p className="font-bold leading-snug">{selected.title}</p>
-              {selected.location.address && (
-                <p className="mt-1 text-xs text-slate-500">{selected.location.address}</p>
-              )}
-              {selected.priority && (
-                <p className="mt-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                  {selected.priority} priority
-                </p>
-              )}
-            </div>
-          </Popup>
-        )}
       </Map>
+
+      {/* Animated Sidebar */}
+      <AnimatePresence>
+        {selected && (
+          <motion.div
+            initial={{ x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="absolute bottom-6 right-6 top-6 z-50 w-full max-w-[400px] rounded-[2.5rem] border border-slate-200 bg-white/95 p-8 shadow-2xl backdrop-blur-xl"
+          >
+            <div className="flex h-full flex-col">
+              <div className="mb-8 flex items-center justify-between">
+                <span className={`rounded-xl px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] border ${
+                  selected.priority === 'Critical' ? 'bg-red-50 text-red-500 border-red-100' :
+                  selected.priority === 'Urgent' ? 'bg-orange-50 text-orange-500 border-orange-100' :
+                  'bg-emerald-50 text-emerald-500 border-emerald-100'
+                }`}>
+                  {selected.priority} Priority
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelected(null)}
+                  className="rounded-xl bg-slate-100 p-2 text-slate-400 transition-all hover:bg-slate-200 hover:text-slate-600"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mb-8">
+                 {variant === 'ngo' && selectedIsMine && (
+                    <p className="mb-2 text-[10px] font-black uppercase tracking-[0.3em] text-primary">AUTHORIZED MISSION</p>
+                 )}
+                 <h2 className="text-3xl font-black leading-tight tracking-tight text-slate-950">{selected.title}</h2>
+              </div>
+
+              <div className="space-y-6 flex-1 overflow-y-auto no-scrollbar">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Target Location</h4>
+                    <p className="text-sm font-bold text-slate-700">{selected.location.address || "Live Node Coordinates"}</p>
+                  </div>
+                </div>
+
+                {userLoc && (
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-2xl bg-secondary/10 p-3 text-secondary">
+                      <Ruler className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Estimated Distance</h4>
+                      <p className="text-sm font-bold text-slate-700">
+                        {getDistance(userLoc.lat, userLoc.lng, selected.location.lat, selected.location.lng)} Km from your position
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-start gap-4">
+                  <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-600">
+                    <Activity className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Live Status</h4>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-600 border border-emerald-100">
+                       <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> ACTIVE NODE
+                    </span>
+                  </div>
+                </div>
+
+                <div className="rounded-[2rem] bg-slate-50 p-6 border border-slate-100">
+                   <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Tactical briefing</h4>
+                   <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                      Immediate orchestration required. Skill verification must be completed prior to deployment. Follow local safety protocols at all times.
+                   </p>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-8 border-t border-slate-100">
+                 <button 
+                  disabled={acceptingMapTask}
+                  onClick={async () => {
+                    if (variant === 'volunteer') {
+                       if (onAcceptTask) {
+                         onAcceptTask(selected);
+                         setSelected(null);
+                       } else {
+                          setAcceptingMapTask(true);
+                          try {
+                            const res = await fetch(`/api/tasks/${selected._id}/accept`, {
+                              method: 'POST',
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (res.ok) {
+                              addNotification({
+                                title: 'Mission Commenced',
+                                message: `You have successfully deployed for "${selected.title}". HQ is tracking your signal.`,
+                                type: 'mission'
+                              });
+                              setSelected(null);
+                            }
+                          } catch (e) {
+                            console.error(e);
+                          } finally {
+                            setAcceptingMapTask(false);
+                          }
+                       }
+                    }
+                  }}
+                  className="w-full bg-primary hover:bg-primary/90 text-white font-black py-6 rounded-[1.8rem] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-xl flex items-center justify-center gap-3 uppercase tracking-[0.2em] text-xs disabled:opacity-50"
+                >
+                    {variant === 'volunteer' ? (acceptingMapTask ? 'Processing...' : 'Initiate Deployment') : 'Manage Mission'} <Navigation className="w-5 h-5" />
+                 </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="pointer-events-none absolute bottom-6 left-6 z-10 flex flex-col gap-3">
         <div className="rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-md backdrop-blur-sm">

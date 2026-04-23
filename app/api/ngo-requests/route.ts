@@ -1,23 +1,21 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
 import { connectToDatabase } from '@/lib/mongodb';
 import { NGORequest, User } from '@/models';
-
-const JWT_SECRET = process.env.JWT_SECRET;
+import { env } from '@/lib/env';
+import { getAuthToken, verifyAuthToken } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    if (!JWT_SECRET) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = getAuthToken(request);
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: 'ngo' | 'volunteer' };
+    const decoded = verifyAuthToken(token, env.JWT_SECRET);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    
     if (decoded.role !== 'volunteer') {
       return NextResponse.json({ error: 'Only volunteers can send requests' }, { status: 403 });
     }
@@ -62,24 +60,65 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    if (!JWT_SECRET) {
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = getAuthToken(request);
+    if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; role: 'ngo' | 'volunteer' };
+    const decoded = verifyAuthToken(token, env.JWT_SECRET);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
     
     await connectToDatabase();
     
-    const requests = await NGORequest.find({ volunteerId: decoded.userId });
-    return NextResponse.json(requests);
+    if (decoded.role === 'ngo') {
+      const requests = await NGORequest.find({ ngoId: decoded.userId }).populate('volunteerId', 'name email skills location phone');
+      return NextResponse.json(requests);
+    } else {
+      const requests = await NGORequest.find({ volunteerId: decoded.userId });
+      return NextResponse.json(requests);
+    }
   } catch (error) {
     console.error('Fetch NGO requests error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const token = getAuthToken(request);
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded = verifyAuthToken(token, env.JWT_SECRET);
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+    }
+    
+    if (decoded.role !== 'ngo') {
+      return NextResponse.json({ error: 'Only NGOs can manage requests' }, { status: 403 });
+    }
+    
+    const body = await request.json();
+    const { requestId, status } = body;
+    
+    if (!requestId || !status) return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+    
+    await connectToDatabase();
+    
+    const update = await NGORequest.findOneAndUpdate(
+      { _id: requestId, ngoId: decoded.userId },
+      { status },
+      { new: true }
+    );
+    
+    if (!update) return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+    
+    return NextResponse.json(update);
+  } catch (error) {
+    console.error('Update NGO requests error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

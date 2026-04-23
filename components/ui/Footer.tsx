@@ -9,9 +9,9 @@ export default function Footer() {
           <div className="col-span-1 md:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 bg-gradient-to-tr from-primary to-secondary rounded-lg flex items-center justify-center font-bold text-white shadow-lg">
-                Si
+                CC
               </div>
-              <span className="text-xl font-black text-slate-800 tracking-tight">Sahayog<span className="text-secondary">India</span></span>
+              <span className="text-xl font-black text-slate-800 tracking-tight">Crisis<span className="text-secondary">Connect</span></span>
             </Link>
             <p className="mb-6 max-w-sm text-sm">
               The Intelligent Orchestration Engine for Social Impact. Bridging the gap between localized social needs and available human resources in real-time.
@@ -40,7 +40,7 @@ export default function Footer() {
         </div>
         
         <div className="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm">
-          <div>© {new Date().getFullYear()} Sahayog India. All rights reserved.</div>
+          <div>© {new Date().getFullYear()} Crisis Connect. All rights reserved.</div>
           <div className="flex gap-6">
             <Link href="#" className="hover:text-slate-800 transition">Privacy Policy</Link>
             <Link href="#" className="hover:text-slate-800 transition">Terms of Service</Link>

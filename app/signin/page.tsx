@@ -28,7 +28,15 @@ export default function SignInPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const contentType = response.headers.get('content-type');
+      let data;
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Unexpected non-JSON response:', text);
+        throw new Error('Server returned an unexpected response. Please try again later.');
+      }
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
@@ -57,7 +65,7 @@ export default function SignInPage() {
       >
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-tr from-primary to-secondary rounded-2xl flex items-center justify-center font-bold text-white shadow-lg mx-auto mb-4 text-xl">
-            Si
+            CC
           </div>
           <h1 className="text-3xl font-bold text-slate-800">Welcome Back</h1>
           <p className="text-slate-500">Sign in to your Crisis Connect account</p>

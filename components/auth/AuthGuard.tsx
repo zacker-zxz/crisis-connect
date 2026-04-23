@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { token, user } = useAuthStore();
+  const { user } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
   const [authorized, setAuthorized] = useState(false);
@@ -17,14 +17,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
 
-    if (!token) {
-      setAuthorized(false);
-      router.push('/signin');
-      return;
-    }
-
     if (!user) {
       setAuthorized(false);
+      router.push('/signin');
       return;
     }
 
@@ -41,7 +36,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     setAuthorized(true);
-  }, [mounted, token, user, pathname, router]);
+  }, [mounted, user, pathname, router]);
 
   // Avoid SSR/client mismatches by waiting for client mount first.
   if (!mounted) {

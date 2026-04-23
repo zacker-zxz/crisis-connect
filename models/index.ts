@@ -28,6 +28,7 @@ const TaskSchema = new Schema({
   description:        { type: String, required: true },
   requiredVolunteers: { type: Number, required: true },
   filledVolunteers:   { type: Number, default: 0 },
+  assignedVolunteers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   requiredSkills:     [{ type: String }],
   priority:           { type: String, enum: ['Critical', 'Urgent', 'Medium', 'Low'], default: 'Medium' },
   location: {

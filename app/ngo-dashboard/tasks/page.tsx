@@ -81,10 +81,26 @@ export default function ActiveTasksPage() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
   };
 
-  const handleStatusChange = (taskId: string, newStatus: Task['status']) => {
-    setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: newStatus } : t));
+  const handleStatusChange = async (taskId: string, newStatus: Task['status']) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (res.ok) {
+        setTasks(prev => prev.map(t => t._id === taskId ? { ...t, status: newStatus } : t));
+        addToast(`Mission marked as "${newStatus}"`, 'success');
+      } else {
+        addToast('Failed to update status', 'error');
+      }
+    } catch (err) {
+      addToast('Network error', 'error');
+    }
     setOpenMenuId(null);
-    addToast(`Mission marked as "${newStatus}"`, 'success');
   };
 
   const handleDiscard = (task: Task) => {
@@ -92,10 +108,24 @@ export default function ActiveTasksPage() {
     setOpenMenuId(null);
   };
 
-  const confirmDiscardTask = () => {
+  const confirmDiscardTask = async () => {
     if (!confirmDiscard) return;
-    setTasks(prev => prev.filter(t => t._id !== confirmDiscard._id));
-    addToast(`"${confirmDiscard.title}" has been discarded.`, 'info');
+    try {
+      const res = await fetch(`/api/tasks/${confirmDiscard._id}`, {
+        method: 'DELETE',
+        headers: { 
+          'Authorization': `Bearer ${token}` 
+        }
+      });
+      if (res.ok) {
+        setTasks(prev => prev.filter(t => t._id !== confirmDiscard._id));
+        addToast(`"${confirmDiscard.title}" has been discarded.`, 'info');
+      } else {
+        addToast('Failed to delete task', 'error');
+      }
+    } catch (err) {
+      addToast('Network error', 'error');
+    }
     setConfirmDiscard(null);
   };
 
@@ -155,7 +185,7 @@ export default function ActiveTasksPage() {
             {Array.from({length: 36}).map((_,i) => <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-800" />)}
           </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto min-h-[450px]">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-200 bg-slate-50/50">
@@ -236,30 +266,45 @@ export default function ActiveTasksPage() {
                           <AnimatePresence>
                             {openMenuId === task._id && (
                               <motion.div
-                                initial={{ opacity: 0, scale: 0.95, y: -6 }}
+                                initial={{ opacity: 0, scale: 0.95, y: 6 }}
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: -6 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 6 }}
                                 transition={{ duration: 0.12 }}
-                                className="absolute right-0 bottom-full mb-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50"
+                                className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50"
                               >
                                 <div className="p-2 space-y-1">
-                                  <button
-                                    onClick={() => handleStatusChange(task._id, 'In Progress')}
-                                    disabled={task.status === 'In Progress'}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                  >
-                                    <PlayCircle className="w-4 h-4" />
-                                    Mark In Progress
-                                  </button>
-                                  <button
-                                    onClick={() => handleStatusChange(task._id, 'Completed')}
-                                    disabled={task.status === 'Completed'}
-                                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-emerald-600 hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
-                                  >
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    Mark Completed
-                                  </button>
-                                  <hr className="border-gray-100" />
+                                    <button
+                                      onClick={() => handleStatusChange(task._id, 'In Progress')}
+                                      disabled={task.status === 'In Progress'}
+                                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                    >
+                                      <PlayCircle className="w-4 h-4" />
+                                      Mark In Progress
+                                    </button>
+                                    <button
+                                      onClick={() => handleStatusChange(task._id, 'Completed')}
+                                      disabled={task.status === 'Completed'}
+                                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-emerald-600 hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                                    >
+                                      <CheckCircle2 className="w-4 h-4" />
+                                      Mark Completed
+                                    </button>
+                                    <hr className="border-gray-100" />
+                                    <button
+                                      onClick={() => window.location.href = `/ngo-dashboard/tasks/edit/${task._id}`}
+                                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100 transition"
+                                    >
+                                      <ClipboardList className="w-4 h-4" />
+                                      Edit Mission
+                                    </button>
+                                    <button
+                                      onClick={() => window.location.href = `/ngo-dashboard/volunteers?taskId=${task._id}`}
+                                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-secondary hover:bg-secondary/10 transition"
+                                    >
+                                      <Users className="w-4 h-4" />
+                                      View Volunteers
+                                    </button>
+                                    <hr className="border-gray-100" />
                                   <button
                                     onClick={() => handleDiscard(task)}
                                     className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 transition"

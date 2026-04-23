@@ -3,22 +3,32 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/models';
-
-const JWT_SECRET = process.env.JWT_SECRET;
+import { env } from '@/lib/env';
+import { setAuthCookie, verifyAuthToken } from '@/lib/auth';
+import { loginSchema } from '@/lib/validation';
+import { rateLimiter } from '@/lib/rateLimiter';
 
 export async function POST(request: Request) {
   try {
-    if (!JWT_SECRET) {
+    // Apply simple IP rate limiting
+    const limitResult = await rateLimiter(request);
+    if (!limitResult.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
+    // Validate request body
+    const body = await request.json();
+    const parseResult = loginSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json({ error: 'Invalid request payload', details: parseResult.error.format() }, { status: 400 });
+    }
+    const { email, password } = parseResult.data;
+
+    if (!env.JWT_SECRET) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     await connectToDatabase();
-    const body = await request.json();
-    const { email, password } = body;
-
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Missing credentials' }, { status: 400 });
-    }
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -30,16 +40,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const token = jwt.sign(
-      { userId: user._id, role: user.role },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    const token = jwt.sign({ userId: user._id.toString(), role: user.role }, env.JWT_SECRET, { expiresIn: '7d' });
 
-    // Return the user without the password
+    // Prepare response without password
     const userResponse = {
       id: user._id,
-      _id: user._id,
       name: user.name,
       email: user.email,
       createdAt: user.createdAt,
@@ -52,7 +57,10 @@ export async function POST(request: Request) {
       publicDescription: user.publicDescription,
     };
 
-    return NextResponse.json({ token, user: userResponse }, { status: 200 });
+    const response = NextResponse.json({ token, user: userResponse }, { status: 200 });
+    // Set auth cookie (httpOnly, secure, sameSite)
+    setAuthCookie(response, token);
+    return response;
   } catch (error: any) {
     console.error('Login error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

@@ -34,13 +34,11 @@ const persistUserSafely = (user: User) => {
   try {
     localStorage.setItem('user', JSON.stringify(user));
   } catch {
-    // If storage quota is exceeded (for example by large base64 profile images),
-    // persist a lightweight version and keep full user in in-memory state.
     const lightweightUser = { ...user, profileImageUrl: undefined };
     try {
       localStorage.setItem('user', JSON.stringify(lightweightUser));
     } catch {
-      // Ignore persistence failures to avoid breaking UI updates.
+      // Ignore persistence failures
     }
   }
 };

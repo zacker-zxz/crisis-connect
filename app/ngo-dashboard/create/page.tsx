@@ -17,9 +17,13 @@ import {
   X,
   Search,
   Check,
-  Flame
+  Flame,
+  Sparkles,
+  Camera
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
+import { LoadingScreen } from '@/components/loading-screen';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 
@@ -52,8 +56,14 @@ export default function CreateTaskPage() {
   });
   
   const [loading, setLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  
+  const [customSkillInput, setCustomSkillInput] = useState('');
+  const [dynamicSkills, setDynamicSkills] = useState<string[]>( AVAILABLE_SKILLS );
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Address Autocomplete UI state
   const [addressQuery, setAddressQuery] = useState('');
@@ -72,6 +82,7 @@ export default function CreateTaskPage() {
 
   const router = useRouter();
   const token = useAuthStore((state) => state.token);
+  const addNotification = useNotificationStore((state) => state.addNotification);
   const autocompleteRef = useRef<HTMLDivElement>(null);
 
   // Close suggestions when clicking outside
@@ -162,6 +173,74 @@ export default function CreateTaskPage() {
     }
   };
 
+  const handleSmartScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setScanning(true);
+    setError('');
+
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = async () => {
+        try {
+          const base64 = reader.result as string;
+          
+          const response = await fetch('/api/gemini/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: base64 })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "AI Analysis failed");
+          }
+          
+          const assessment = await response.json();
+          // Get current date/time to local ISO string (YYYY-MM-DDTHH:mm)
+          const now = new Date();
+          const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+          
+          // Add any new AI-suggested skills to the vocabulary
+          if (assessment.recommendedSkills) {
+            setDynamicSkills(prev => {
+              const newSkills = [...prev];
+              assessment.recommendedSkills.forEach((skill: string) => {
+                if (!newSkills.includes(skill)) newSkills.push(skill);
+              });
+              return newSkills;
+            });
+          }
+
+          setFormData(prev => ({
+            ...prev,
+            title: assessment.crisisType || prev.title,
+            description: assessment.description || prev.description,
+            priority: assessment.suggestedPriority || assessment.severity || prev.priority,
+            requiredSkills: assessment.recommendedSkills || prev.requiredSkills,
+            requiredVolunteers: assessment.estimatedVolunteersNeeded || prev.requiredVolunteers,
+            dateTime: localDateTime
+          }));
+
+          setScanning(false);
+          addNotification({
+            title: 'AI Intel Received',
+            message: `Crisis identified as ${assessment.crisisType}. Recommendations applied.`,
+            type: 'alert'
+          });
+        } catch (err: any) {
+          setError("AI Scan failed: " + err.message);
+          setScanning(false);
+        }
+      };
+    } catch (err: any) {
+      setError("AI Scan failed: " + err.message);
+      setScanning(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -190,6 +269,12 @@ export default function CreateTaskPage() {
         throw new Error(data.error || 'Failed to create task');
       }
 
+      addNotification({
+        title: 'New Mission Deployed',
+        message: `Deployment: "${formData.title}" in ${formData.location.address}. Priority: ${formData.priority}.`,
+        type: 'mission'
+      });
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/ngo-dashboard');
@@ -203,6 +288,16 @@ export default function CreateTaskPage() {
 
   return (
     <div className="max-w-4xl mx-auto pb-20 relative">
+      <LoadingScreen
+        isVisible={scanning}
+        variant="transparent"
+        headline="Crisis Lens AI"
+        statusLines={[
+          'Ingesting visual crisis context…',
+          'Extracting severity and resource signals…',
+          'Drafting mission fields for your review…',
+        ]}
+      />
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -216,6 +311,45 @@ export default function CreateTaskPage() {
               <h2 className="text-3xl font-extrabold text-slate-800">Deploy New Mission</h2>
               <p className="text-slate-500">Post an urgent requirement to the orchestration engine.</p>
            </div>
+        </div>
+
+        {/* Smart Scan Banner */}
+        <div className="relative mb-8 overflow-hidden rounded-3xl bg-gradient-to-r from-primary to-secondary p-1 shadow-lg shadow-primary/20">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white/95 backdrop-blur px-6 py-5 rounded-[1.4rem]">
+            <div className="flex items-center gap-4">
+               <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center text-primary border border-primary/20">
+                  <Sparkles className="w-6 h-6 animate-pulse" />
+               </div>
+               <div>
+                 <h4 className="font-black text-slate-800">Crisis Lens AI™</h4>
+                 <p className="text-xs text-slate-500 font-medium">Auto-fill mission logic with image intelligence</p>
+               </div>
+            </div>
+            <button 
+              type="button"
+              disabled={scanning}
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full sm:w-auto bg-slate-900 hover:bg-black text-white text-sm font-bold flex items-center justify-center gap-2 px-6 py-3 rounded-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+            >
+              {scanning ? (
+                <>Analyzing scene…</>
+              ) : (
+                <>
+                  <Camera className="w-4 h-4" />
+                  Smart Scan Photo
+                </>
+              )}
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleSmartScan}
+              className="hidden" 
+              accept="image/*"
+            />
+          </div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-secondary/10 blur-[60px] rounded-full -mr-10 -mt-10"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/10 blur-[50px] rounded-full -ml-8 -mb-8"></div>
         </div>
 
         {error && (
@@ -281,12 +415,56 @@ export default function CreateTaskPage() {
           </div>
 
           <div className="space-y-4">
-             <div className="flex items-center gap-2 mb-2">
-                 <ListPlus className="w-5 h-5 text-slate-500" />
-                 <label className="text-sm font-bold text-slate-600">Required Expertise (Select multiple)</label>
+             <div className="flex items-center justify-between mb-2">
+                 <div className="flex items-center gap-2">
+                   <ListPlus className="w-5 h-5 text-slate-500" />
+                   <label className="text-sm font-bold text-slate-600">Required Expertise (Select multiple)</label>
+                 </div>
+                 <div className="flex gap-2">
+                   <input
+                     type="text"
+                     value={customSkillInput}
+                     onChange={(e) => setCustomSkillInput(e.target.value)}
+                     onKeyDown={(e) => {
+                       if (e.key === 'Enter') {
+                         e.preventDefault();
+                         if (customSkillInput.trim()) {
+                           const newSkill = customSkillInput.trim();
+                           if (!dynamicSkills.includes(newSkill)) {
+                             setDynamicSkills([...dynamicSkills, newSkill]);
+                           }
+                           if (!formData.requiredSkills.includes(newSkill)) {
+                             setFormData(prev => ({...prev, requiredSkills: [...prev.requiredSkills, newSkill]}));
+                           }
+                           setCustomSkillInput('');
+                         }
+                       }
+                     }}
+                     placeholder="Type custom skill & press Enter"
+                     className="text-sm bg-slate-50 border border-gray-200 rounded-lg py-1 px-3 w-48 focus:outline-none focus:border-primary transition"
+                   />
+                   <button
+                     type="button"
+                     onClick={() => {
+                        if (customSkillInput.trim()) {
+                          const newSkill = customSkillInput.trim();
+                          if (!dynamicSkills.includes(newSkill)) {
+                            setDynamicSkills([...dynamicSkills, newSkill]);
+                          }
+                          if (!formData.requiredSkills.includes(newSkill)) {
+                            setFormData(prev => ({...prev, requiredSkills: [...prev.requiredSkills, newSkill]}));
+                          }
+                          setCustomSkillInput('');
+                        }
+                     }}
+                     className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1 rounded-lg transition"
+                   >
+                     Add
+                   </button>
+                 </div>
              </div>
              <div className="flex flex-wrap gap-3 p-4 bg-slate-50 border border-gray-200 rounded-2xl">
-                {AVAILABLE_SKILLS.map(skill => {
+                {dynamicSkills.map(skill => {
                    const isSelected = formData.requiredSkills.includes(skill);
                    return (
                      <button

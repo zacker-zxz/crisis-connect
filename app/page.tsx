@@ -11,6 +11,10 @@ export default function Home() {
   const heroY = useTransform(scrollYProgress, [0, 0.2], [0, 100]);
   const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
 
+  const gradientAnimation = {
+    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+  };
+
   return (
     <div className="relative">
       {/* Hero Section – Full Screen */}
@@ -37,7 +41,15 @@ export default function Home() {
             Intelligent Orchestration Engine
           </div>
           <h1 className="text-6xl md:text-8xl font-black text-slate-800 mb-6 tracking-tight leading-tight">
-            Connect. <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Volunteer.</span><br/>Save Lives.
+            Connect. <motion.span 
+              animate={gradientAnimation}
+              transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+              style={{
+                backgroundImage: "linear-gradient(to right, #14b8a6, #f59e0b, #14b8a6)",
+                backgroundSize: "200% auto",
+              }}
+              className="text-transparent bg-clip-text font-black"
+            >Volunteer.</motion.span><br/>Save Lives.
           </h1>
           <p className="text-xl md:text-2xl text-slate-500 mb-10 max-w-2xl mx-auto font-light leading-relaxed">
             Bridging the gap between localized social needs and available human resources in real-time.

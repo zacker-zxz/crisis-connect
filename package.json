@@ -1,5 +1,5 @@
 {
-  "name": "sahayog-india",
+  "name": "crisis-connect",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "bcryptjs": "^2.4.3",
     "framer-motion": "^11.0.8",
     "jsonwebtoken": "^9.0.2",

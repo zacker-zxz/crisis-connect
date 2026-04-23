@@ -1,10 +1,12 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Search, Star, MapPin, Mail, MoreVertical, ShieldCheck,
-  X, Phone, Calendar, Award, ClipboardList, Flame, UserCheck
+  Search, Star, MapPin, Mail, ShieldCheck,
+  X, Phone, Calendar, Award, ClipboardList, UserCheck
 } from 'lucide-react';
+import { useAuthStore } from '@/store/authStore';
+import { NGO_SEED_TEAM } from '@/lib/ngoTeamSeed';
 
 interface Volunteer {
   _id: string;
@@ -21,47 +23,120 @@ interface Volunteer {
   bio?: string;
 }
 
-const MOCK_VOLUNTEERS: Volunteer[] = [
-  {
-    _id: '1', name: 'Sarah Connor', email: 'sarah@example.com',
-    skills: ['First Aid', 'Tactical'], location: { address: 'Los Angeles, sector 5' },
-    phone: '+91 98765 43210', joinedDate: '2024-01-15', completedMissions: 12,
-    rating: 4.9, certifications: ['CPR Certified', 'Disaster Response Level 2'],
-    availability: 'Weekends & Evenings', bio: 'Experienced first responder with 5+ years in emergency medical aid during natural disasters.'
-  },
-  {
-    _id: '2', name: 'John Doe', email: 'john@example.com',
-    skills: ['Logistics', 'Driving'], location: { address: 'Mumbai South' },
-    phone: '+91 99000 11234', joinedDate: '2024-03-20', completedMissions: 8,
-    rating: 4.7, certifications: ['Heavy Vehicle License', 'Supply Chain Mgmt'],
-    availability: 'Full-time during emergencies', bio: 'Logistics coordinator specializing in last-mile supply delivery in disaster zones.'
-  },
-  {
-    _id: '3', name: 'Alex Johnson', email: 'alex@example.com',
-    skills: ['Medical', 'Nursing'], location: { address: 'Delhi West' },
-    phone: '+91 98111 22333', joinedDate: '2023-11-01', completedMissions: 22,
-    rating: 5.0, certifications: ['MBBS', 'Emergency Trauma Care', 'Vaccination Drive Certified'],
-    availability: 'On-call 24/7', bio: 'Registered nurse and emergency physician with experience in field hospitals during flood relief.'
-  },
-  {
-    _id: '4', name: 'Priya Patel', email: 'priya@example.com',
-    skills: ['Communication', 'Translation'], location: { address: 'Bangalore Central' },
-    phone: '+91 87654 32109', joinedDate: '2024-06-10', completedMissions: 5,
-    rating: 4.6, certifications: ['Language Certification: Hindi/Kannada/English'],
-    availability: 'Flexible', bio: 'Multilingual communicator helping bridge language barriers in community outreach programs.'
-  },
+const bios = [
+  'Police reform and community volunteer training advocate; supports disaster discipline on ground.',
+  'Grassroots organiser for rural relief and anti-corruption supply-chain transparency.',
+  'Displacement and rehabilitation specialist; coordinates with authorities during evacuations.',
+  'Orphan care and women’s shelter networks; last-mile family reunification after floods.',
 ];
+
+const MOCK_VOLUNTEERS: Volunteer[] = NGO_SEED_TEAM.map((t, i) => ({
+  _id: t.id,
+  name: t.name,
+  email: `${t.name.toLowerCase().replace(/\s+/g, '.')}@relief-khindi.org`,
+  skills: i === 0 ? ['First Aid', 'Crowd Management'] : i === 1 ? ['Logistics', 'Community Kitchen'] : i === 2 ? ['Advocacy', 'Shelter Ops'] : ['Child Protection', 'Counselling'],
+  location: { address: i % 2 === 0 ? 'Mumbai, Maharashtra' : 'Navi Mumbai, Maharashtra' },
+  phone: `+91 98${700 + i} 12${100 + i}`,
+  joinedDate: `2024-0${i + 1}-15`,
+  completedMissions: 10 + i * 3,
+  rating: 4.7 + i * 0.05,
+  certifications: i === 0 ? ['CPR', 'Disaster Response L2'] : ['Field Safety', 'Relief Logistics'],
+  availability: 'On-call during orange/red alerts',
+  bio: bios[i] ?? bios[0],
+}));
+
+function volunteerFromApprovedRequest(req: any): Volunteer | null {
+  const v = req.volunteerId;
+  if (!v || typeof v === 'string') return null;
+  const id = String(v._id ?? v.id ?? '');
+  if (!id) return null;
+  return {
+    _id: id,
+    name: v.name || 'Volunteer',
+    email: v.email || '',
+    skills: Array.isArray(v.skills) ? v.skills : [],
+    location: v.location?.address ? { address: v.location.address } : { address: 'India' },
+    phone: v.phone,
+    joinedDate: req.updatedAt || req.createdAt || new Date().toISOString(),
+    completedMissions: 0,
+    rating: 4.5,
+    certifications: [],
+    availability: 'Joined via Crisis Connect',
+    bio: 'Approved volunteer from your join requests.',
+  };
+}
+
+function mergeNetworkTeam(base: Volunteer[], requests: any[]): Volunteer[] {
+  const approved = requests
+    .filter((r) => r.status === 'Approved')
+    .map(volunteerFromApprovedRequest)
+    .filter(Boolean) as Volunteer[];
+  const seen = new Set(base.map((b) => b._id));
+  const extra = approved.filter((a) => !seen.has(a._id));
+  return [...base, ...extra];
+}
 
 export default function VolunteersPage() {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<Volunteer | null>(null);
+  const [activeTab, setActiveTab] = useState<'network' | 'requests'>('network');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const token = useAuthStore((s) => s.token);
+
+  const fetchRequests = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await fetch('/api/ngo-requests', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setRequests(data);
+          setVolunteers(mergeNetworkTeam(MOCK_VOLUNTEERS, data));
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [token]);
 
   useEffect(() => {
-    setVolunteers(MOCK_VOLUNTEERS);
-    setLoading(false);
-  }, []);
+    if (!token) {
+      setVolunteers(MOCK_VOLUNTEERS);
+      setLoading(false);
+      return;
+    }
+    fetchRequests().finally(() => setLoading(false));
+  }, [token, fetchRequests]);
+
+  const handleRequestAction = async (requestId: string, status: string) => {
+    if (!token) return;
+    setActionLoading(requestId);
+    try {
+      const res = await fetch('/api/ngo-requests', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ requestId, status }),
+      });
+      if (res.ok) {
+        await fetchRequests();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Could not update request');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const filtered = volunteers.filter(v =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -81,11 +156,32 @@ export default function VolunteersPage() {
             <h2 className="text-3xl font-black text-slate-800 tracking-tight">Personnel Database</h2>
             <p className="text-slate-500">Manage and verify certified responders in your network.</p>
           </div>
-          <div className="relative w-full md:w-96">
+          
+          <div className="flex bg-slate-100 p-1 rounded-2xl md:ml-auto">
+            <button 
+              onClick={() => setActiveTab('network')}
+              className={`px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'network' ? 'bg-white text-primary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Network
+            </button>
+            <button 
+              onClick={() => setActiveTab('requests')}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'requests' ? 'bg-white text-secondary shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Requests
+              {requests.filter(r => r.status === 'Pending').length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-secondary text-white flex items-center justify-center text-[10px] shadow-md">
+                  {requests.filter(r => r.status === 'Pending').length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="relative w-full md:w-80">
              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
              <input 
                 type="text" 
-                placeholder="Filter by skill, name or location..." 
+                placeholder="Filter network..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full bg-white border border-gray-200 rounded-2xl py-3.5 pl-12 pr-4 text-slate-800 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition shadow-sm" 
@@ -97,6 +193,60 @@ export default function VolunteersPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           [1,2,3].map(i => <div key={i} className="h-64 bg-slate-100 rounded-[2.5rem] animate-pulse" />)
+        ) : activeTab === 'requests' ? (
+          requests.length === 0 ? (
+             <div className="col-span-full py-16 text-center bg-white border border-slate-200 rounded-[3rem] shadow-sm">
+                <p className="text-slate-500">No incoming volunteer requests found.</p>
+             </div>
+          ) : (
+            requests.map((req, i) => (
+             <motion.div 
+              key={req._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              className="relative overflow-hidden bg-white border border-gray-200 p-7 rounded-[2.5rem] shadow-sm group"
+            >
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-secondary to-primary opacity-60 rounded-t-[2.5rem]" />
+              <div className="mb-4">
+                <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${
+                  req.status === 'Pending' ? 'bg-amber-50 text-amber-500 border border-amber-100' :
+                  req.status === 'Approved' ? 'bg-emerald-50 text-emerald-500 border border-emerald-100' :
+                  'bg-red-50 text-red-500 border border-red-100'
+                }`}>
+                  {req.status}
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-1">{req.volunteerId?.name || "Unknown Volunteer"}</h3>
+              <p className="text-sm text-slate-500 mb-4">{req.volunteerId?.email}</p>
+              
+              {req.message && (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-5">
+                   <p className="text-xs italic text-slate-600 line-clamp-3">"{req.message}"</p>
+                </div>
+              )}
+              
+              {req.status === 'Pending' && (
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  <button 
+                    onClick={() => handleRequestAction(req._id, 'Approved')}
+                    disabled={actionLoading === req._id}
+                    className="py-3 rounded-2xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition shadow-sm"
+                  >
+                    Accept
+                  </button>
+                  <button 
+                    onClick={() => handleRequestAction(req._id, 'Rejected')}
+                    disabled={actionLoading === req._id}
+                    className="py-3 rounded-2xl bg-rose-50 text-rose-500 font-bold text-sm hover:bg-rose-100 transition"
+                  >
+                    Decline
+                  </button>
+                </div>
+              )}
+            </motion.div>
+            ))
+          )
         ) : (
           filtered.map((vol, i) => (
             <motion.div 

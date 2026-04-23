@@ -33,9 +33,9 @@ export default function Header() {
       <div className="container mx-auto px-4 flex justify-between items-center">
         <Link href="/" className="flex items-center gap-2">
           <div className="w-10 h-10 bg-gradient-to-tr from-primary to-secondary rounded-lg flex items-center justify-center font-bold text-white shadow-lg">
-            Si
+            CC
           </div>
-          <span className="text-2xl font-black text-slate-800 tracking-tight">Sahayog<span className="text-secondary">India</span></span>
+          <span className="text-2xl font-black text-slate-800 tracking-tight">Crisis<span className="text-secondary">Connect</span></span>
         </Link>
         
         {/* Desktop Nav – Centered Links */}

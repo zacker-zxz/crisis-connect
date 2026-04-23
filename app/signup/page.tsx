@@ -71,6 +71,9 @@ function SignUpPageInner() {
         className="glass-card p-8 rounded-3xl w-full max-w-lg"
       >
         <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-tr from-primary to-secondary rounded-2xl flex items-center justify-center font-bold text-white shadow-lg mx-auto mb-4 text-xl">
+            CC
+          </div>
           <h1 className="text-3xl font-bold text-slate-800">Join Crisis Connect</h1>
           <p className="text-slate-500">Create an account to start making an impact</p>
         </div>

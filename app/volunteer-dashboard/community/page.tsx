@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, MapPin, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore } from '@/store/notificationStore';
 
 interface NGOItem {
   _id: string;
@@ -13,7 +14,8 @@ interface NGOItem {
 }
 
 export default function VolunteerCommunityPage() {
-  const { token } = useAuthStore();
+  const { user } = useAuthStore();
+  const addNotification = useNotificationStore(state => state.addNotification);
   const [ngos, setNgos] = useState<NGOItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState<string | null>(null);
@@ -24,16 +26,7 @@ export default function VolunteerCommunityPage() {
       try {
         const [ngosRes, reqsRes] = await Promise.all([
           fetch('/api/ngos'),
-          token
-            ? fetch('/api/ngo-requests', {
-                headers: { Authorization: `Bearer ${token}` },
-              })
-            : Promise.resolve(
-                new Response(JSON.stringify([]), {
-                  status: 200,
-                  headers: { 'Content-Type': 'application/json' },
-                })
-              ),
+          fetch('/api/ngo-requests')
         ]);
         
         const ngosData = await ngosRes.json();
@@ -50,10 +43,10 @@ export default function VolunteerCommunityPage() {
       }
     };
     fetchData();
-  }, [token]);
+  }, []);
 
   const sendRequest = async (ngoId: string) => {
-    if (!token) {
+    if (!user) {
       alert('Please sign in again to send requests.');
       return;
     }
@@ -63,8 +56,7 @@ export default function VolunteerCommunityPage() {
       const res = await fetch('/api/ngo-requests', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ ngoId }),
       });
@@ -74,6 +66,13 @@ export default function VolunteerCommunityPage() {
         return;
       }
       setExistingRequests(prev => [...prev, ngoId]);
+      
+      addNotification({
+        title: 'Join Request Dispatched',
+        message: `Your request to join "${ngos.find(n => n._id === ngoId)?.organizationName || 'NGO'}" has been sent. Status: Pending.`,
+        type: 'join'
+      });
+
       alert('Request sent successfully.');
     } catch {
       alert('Failed to send request');

@@ -22,77 +22,116 @@ import {
   UserCog,
   AlertTriangle,
   Inbox,
-  ChevronRight
+  ChevronRight,
+  Heart,
+  Share2,
+  Twitter,
+  Facebook,
+  Instagram,
+  BrainCircuit
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { useNotificationStore, Notification as AppNotification } from '@/store/notificationStore';
 
-// --- Notifications Data ---
-const DUMMY_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'task_created',
-    icon: CheckCircle2,
-    iconColor: 'text-emerald-600',
-    iconBg: 'bg-emerald-100',
-    title: 'Mission Deployed',
-    body: '"Flood Relief Coordinator" is now live and accepting volunteers.',
-    time: '2h ago',
-    read: false,
-  },
-  {
-    id: 2,
-    type: 'deadline',
-    icon: Clock,
-    iconColor: 'text-secondary',
-    iconBg: 'bg-secondary/10',
-    title: 'Deadline Approaching',
-    body: '"Medical Supply Transport" is scheduled in 2 days. Confirm readiness.',
-    time: '5h ago',
-    read: false,
-  },
-  {
-    id: 3,
-    type: 'volunteer_joined',
-    icon: UserPlus,
-    iconColor: 'text-primary',
-    iconBg: 'bg-primary/10',
-    title: 'Volunteer Enrolled',
-    body: 'Rahul Verma has joined "Food Distribution Drive". Deployment: 6 / 10.',
-    time: '1d ago',
-    read: false,
-  },
-  {
-    id: 4,
-    type: 'profile_updated',
-    icon: UserCog,
-    iconColor: 'text-slate-600',
-    iconBg: 'bg-slate-100',
-    title: 'Profile Updated',
-    body: 'Your organization profile and description were saved successfully.',
-    time: '2d ago',
-    read: true,
-  },
-  {
-    id: 5,
-    type: 'capacity',
-    icon: AlertTriangle,
-    iconColor: 'text-red-600',
-    iconBg: 'bg-red-100',
-    title: 'Capacity Reached',
-    body: '"Search & Rescue Team" has filled all volunteer slots. Mission is In Progress.',
-    time: '3d ago',
-    read: true,
-  },
-];
+const ICON_MAP = {
+  mission: { icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+  join: { icon: UserPlus, color: 'text-primary', bg: 'bg-primary/10' },
+  alert: { icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-100' }
+};
+
+const ShareModal = ({ isOpen, onClose, score }: { isOpen: boolean, onClose: () => void, score: string }) => {
+  const shareText = `Our organization just reached a Community Impact Score of ${score} on Crisis Connect! 🌏 Proud to lead rescue operations. Support the mission! #CrisisConnect #NGOImpact`;
+  
+  const platforms = [
+    { 
+      name: 'Twitter', 
+      icon: Twitter, 
+      color: 'bg-[#1DA1F2]', 
+      link: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}` 
+    },
+    { 
+      name: 'Facebook', 
+      icon: Facebook, 
+      color: 'bg-[#4267B2]', 
+      link: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent('https://crisis-connect.app')}&quote=${encodeURIComponent(shareText)}` 
+    },
+    { 
+      name: 'Instagram', 
+      icon: Instagram, 
+      color: 'bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]', 
+      link: `https://www.instagram.com` 
+    }
+  ];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl z-[9999] flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div 
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
+            className="bg-white rounded-[3rem] p-10 max-w-md w-full shadow-2xl relative overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl -mr-16 -mt-16" />
+            <div className="relative z-10 text-center">
+               <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center text-primary mx-auto mb-6 border border-primary/20">
+                  <Share2 className="w-8 h-8" />
+               </div>
+               <h3 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Organization Impact</h3>
+               <p className="text-slate-500 text-sm mb-8 leading-relaxed">
+                 Show the world the scale of your impact. Share your organization's score and inspire more support.
+               </p>
+               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8 text-left">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2">Message Preview</p>
+                  <p className="text-slate-700 text-xs font-medium italic">"{shareText}"</p>
+               </div>
+               <div className="grid grid-cols-3 gap-4">
+                  {platforms.map(p => (
+                    <a 
+                      key={p.name}
+                      href={p.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center gap-3 group"
+                    >
+                      <div className={`w-14 h-14 ${p.color} text-white rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-all`}>
+                        <p.icon className="w-6 h-6" />
+                      </div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{p.name}</span>
+                    </a>
+                  ))}
+               </div>
+               <button 
+                 onClick={onClose}
+                 className="mt-10 w-full py-4 text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] hover:text-slate-900 transition-colors"
+               >
+                 Maybe Later
+               </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
 
 export default function NgoLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [notifications, setNotifications] = useState(DUMMY_NOTIFICATIONS);
+  const { notifications, markAllAsRead } = useNotificationStore();
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const notifRef = useRef<HTMLDivElement>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -109,9 +148,8 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
 
   const openNotifications = () => {
     setNotifOpen(prev => !prev);
-    // Mark all as read when opened
     if (!notifOpen) {
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      markAllAsRead();
     }
   };
 
@@ -122,6 +160,7 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
     { name: 'My Schedule', href: '/ngo-dashboard/schedule', icon: Calendar },
     { name: 'Volunteers', href: '/ngo-dashboard/volunteers', icon: Users },
     { name: 'Heat Map', href: '/ngo-dashboard/heatmap', icon: MapIcon },
+    { name: 'Resource Predictor', href: '/ngo-dashboard/resource-predictor', icon: BrainCircuit },
     { name: 'Settings', href: '/ngo-dashboard/settings', icon: Settings },
   ];
 
@@ -245,31 +284,40 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
                             </span>
                           </div>
 
-                          <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-100">
-                            {notifications.map((notif) => (
-                              <div key={notif.id} className={`flex gap-4 p-5 transition-colors ${notif.read ? 'bg-white' : 'bg-slate-50'}`}>
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${notif.iconBg}`}>
-                                  <notif.icon className={`w-5 h-5 ${notif.iconColor}`} />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <p className={`text-sm font-bold ${notif.read ? 'text-slate-600' : 'text-slate-900'}`}>
-                                      {notif.title}
-                                    </p>
-                                    {!notif.read && (
-                                      <span className="w-2 h-2 bg-secondary rounded-full shrink-0 mt-1.5"></span>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{notif.body}</p>
-                                  <p className="text-[10px] text-slate-400 mt-2 font-medium">{notif.time}</p>
-                                </div>
+                          <div className="max-h-[420px] overflow-y-auto divide-y divide-gray-100 no-scrollbar">
+                            {notifications.length === 0 ? (
+                              <div className="p-10 text-center">
+                                <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No alerts detected</p>
                               </div>
-                            ))}
+                            ) : (
+                              notifications.map((notif) => {
+                                const meta = ICON_MAP[notif.type as keyof typeof ICON_MAP] || ICON_MAP.alert;
+                                return (
+                                  <div key={notif.id} className={`flex gap-4 p-5 transition-colors ${notif.read ? 'bg-white' : 'bg-slate-50'}`}>
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${meta.bg}`}>
+                                      <meta.icon className={`w-5 h-5 ${meta.color}`} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-start justify-between gap-2">
+                                        <p className={`text-sm font-bold ${notif.read ? 'text-slate-600' : 'text-slate-900'}`}>
+                                          {notif.title}
+                                        </p>
+                                        {!notif.read && (
+                                          <span className="w-2 h-2 bg-secondary rounded-full shrink-0 mt-1.5"></span>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{notif.message}</p>
+                                      <p className="text-[10px] text-slate-400 mt-2 font-medium">{notif.time}</p>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
                           </div>
 
                           <div className="p-3 border-t border-gray-100 bg-slate-50">
                             <button 
-                              onClick={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+                              onClick={markAllAsRead}
                               className="w-full text-xs font-bold text-primary hover:text-primary/70 transition py-1"
                             >
                               Mark all as read
@@ -280,11 +328,25 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
                     </AnimatePresence>
                   </div>
 
-                  <div className="hidden flex-col items-end sm:flex">
-                      <p className="text-xs font-medium uppercase leading-none tracking-widest text-slate-500">Local Status</p>
-                      <p className="mt-1 flex items-center gap-2 text-sm font-bold text-primary">
-                          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary"></span> Active
-                      </p>
+                   <div className="flex items-center gap-6">
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowShareModal(true)}
+                      className="hidden flex-col items-end sm:flex cursor-pointer group hover:bg-slate-50 p-2 rounded-2xl transition-all"
+                    >
+                        <p className="text-[10px] font-black uppercase leading-none tracking-widest text-slate-400 group-hover:text-primary transition-colors">Impact Score</p>
+                        <p className="mt-1 flex items-center gap-2 text-xl font-black text-secondary tabular-nums">
+                            <Heart className="w-5 h-5 fill-secondary" /> 5,840
+                        </p>
+                    </motion.button>
+
+                    <div className="hidden flex-col items-end sm:flex border-l border-slate-200 pl-6 text-right">
+                        <p className="text-[10px] font-black uppercase leading-none tracking-widest text-slate-500">Local Status</p>
+                        <p className="mt-1 flex items-center gap-2 text-sm font-bold text-primary">
+                            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-primary"></span> Operations Active
+                        </p>
+                    </div>
                   </div>
              </div>
           </header>
@@ -294,6 +356,12 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
           </div>
         </main>
       </div>
+
+      <ShareModal 
+        isOpen={showShareModal} 
+        onClose={() => setShowShareModal(false)} 
+        score="5,840"
+      />
     </AuthGuard>
   );
 }

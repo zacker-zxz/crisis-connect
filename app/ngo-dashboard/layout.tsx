@@ -146,6 +146,43 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const token = useAuthStore.getState().token;
+      if (!token) return;
+      try {
+        const res = await fetch('/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const newNotifs = await res.json();
+          if (newNotifs && newNotifs.length > 0) {
+            // Add them to local store
+            const { addNotification } = useNotificationStore.getState();
+            newNotifs.forEach((n: any) => {
+              addNotification({
+                title: n.title,
+                message: n.message,
+                type: n.type as any,
+              });
+            });
+            // Clear from backend
+            await fetch('/api/notifications', {
+              method: 'DELETE',
+              headers: { Authorization: `Bearer ${token}` }
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch notifications', err);
+      }
+    };
+
+    fetchNotifications();
+    const intervalId = setInterval(fetchNotifications, 15000); // Check every 15s
+    return () => clearInterval(intervalId);
+  }, []);
+
   const openNotifications = () => {
     setNotifOpen(prev => !prev);
     if (!notifOpen) {

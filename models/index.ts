@@ -45,8 +45,18 @@ const NGORequestSchema = new Schema({
   volunteerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   message: { type: String, default: '' },
   status: { type: String, enum: ['Pending', 'Approved', 'Rejected'], default: 'Pending' },
+  rejectionReason: { type: String, default: '' },
+}, { timestamps: true });
+
+const NotificationSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  type: { type: String, enum: ['mission', 'join', 'alert'], default: 'alert' },
+  read: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const User = models.User || model('User', UserSchema);
 export const Task = models.Task || model('Task', TaskSchema);
 export const NGORequest = models.NGORequest || model('NGORequest', NGORequestSchema);
+export const Notification = models.Notification || model('Notification', NotificationSchema);

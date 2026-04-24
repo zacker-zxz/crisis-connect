@@ -1,22 +1,14 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { NGORequest, User, Notification } from '@/models';
-import { env } from '@/lib/env';
-import { getAuthToken, verifyAuthToken } from '@/lib/auth';
+import { NGORequest, User, Notification } from '@/models';
 
 export async function POST(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
 
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-    
-    if (decoded.role !== 'volunteer') {
+    if (role !== 'volunteer') {
       return NextResponse.json({ error: 'Only volunteers can send requests' }, { status: 403 });
     }
 
@@ -37,7 +29,7 @@ export async function POST(request: Request) {
 
     const existing = await NGORequest.findOne({
       ngoId,
-      volunteerId: decoded.userId,
+      volunteerId: userId,
       status: 'Pending',
     });
     if (existing) {
@@ -46,7 +38,7 @@ export async function POST(request: Request) {
 
     const newRequest = await NGORequest.create({
       ngoId,
-      volunteerId: decoded.userId,
+      volunteerId: userId,
       message,
       status: 'Pending',
     });
@@ -60,23 +52,16 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
     
     await connectToDatabase();
     
-    if (decoded.role === 'ngo') {
-      const requests = await NGORequest.find({ ngoId: decoded.userId }).populate('volunteerId', 'name email skills location phone');
+    if (role === 'ngo') {
+      const requests = await NGORequest.find({ ngoId: userId }).populate('volunteerId', 'name email skills location phone');
       return NextResponse.json(requests);
     } else {
-      const requests = await NGORequest.find({ volunteerId: decoded.userId });
+      const requests = await NGORequest.find({ volunteerId: userId });
       return NextResponse.json(requests);
     }
   } catch (error) {
@@ -87,17 +72,10 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
     
-    if (decoded.role !== 'ngo') {
+    if (role !== 'ngo') {
       return NextResponse.json({ error: 'Only NGOs can manage requests' }, { status: 403 });
     }
     
@@ -108,10 +86,10 @@ export async function PUT(request: Request) {
     
     await connectToDatabase();
     
-    const ngo = await User.findById(decoded.userId);
+    const ngo = await User.findById(userId);
     const ngoName = ngo?.organizationName || ngo?.name || 'an NGO';
 
-    const reqDoc = await NGORequest.findOne({ _id: requestId, ngoId: decoded.userId });
+    const reqDoc = await NGORequest.findOne({ _id: requestId, ngoId: userId });
     if (!reqDoc) return NextResponse.json({ error: 'Request not found' }, { status: 404 });
 
     if (status === 'Approved') {

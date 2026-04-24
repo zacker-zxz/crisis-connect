@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { Task } from '@/models';
-import { env } from '@/lib/env';
-import { getAuthToken, verifyAuthToken } from '@/lib/auth';
 import { createTaskSchema } from '@/lib/validation';
 
 // GET all tasks (for heatmap and volunteer dashboard)
@@ -20,18 +18,10 @@ export async function GET() {
 // POST a new task (NGO only)
 export async function POST(request: Request) {
   try {
-    // 1. Authenticate user via cookie
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
 
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-
-    if (decoded.role !== 'ngo') {
+    if (!userId || role !== 'ngo') {
       return NextResponse.json({ error: 'Forbidden: Only NGOs can create tasks' }, { status: 403 });
     }
 
@@ -50,7 +40,7 @@ export async function POST(request: Request) {
     // 3. Create task
     await connectToDatabase();
     const newTask = await Task.create({
-      ngoId: decoded.userId,
+      ngoId: userId,
       title,
       description,
       requiredVolunteers,

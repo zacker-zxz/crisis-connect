@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import { getAuthToken, verifyAuthToken } from "@/lib/auth";
 import { rateLimiter } from "@/lib/rateLimiter";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -74,15 +73,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    // 2. Authentication
-    const token = getAuthToken(req);
-    if (!token) {
+    // 2. Authentication via Middleware Headers
+    const userId = req.headers.get('x-user-id');
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
     const body = await req.json();

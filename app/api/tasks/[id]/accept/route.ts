@@ -1,24 +1,16 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { Task } from '@/models';
-import { env } from '@/lib/env';
-import { getAuthToken, verifyAuthToken } from '@/lib/auth';
+import { Task, User, Notification } from '@/models';
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
 
-    if (decoded.role !== 'volunteer') {
+    if (role !== 'volunteer') {
       return NextResponse.json({ error: 'Forbidden: Only volunteers can accept missions' }, { status: 403 });
     }
 
@@ -31,7 +23,7 @@ export async function POST(
     }
 
     // Check if already assigned
-    if (task.assignedVolunteers.includes(decoded.userId)) {
+    if (task.assignedVolunteers.includes(userId)) {
       return NextResponse.json({ error: 'Mission already accepted' }, { status: 400 });
     }
 
@@ -41,7 +33,7 @@ export async function POST(
     }
 
     // Update task
-    task.assignedVolunteers.push(decoded.userId);
+    task.assignedVolunteers.push(userId);
     task.filledVolunteers += 1;
     if (task.filledVolunteers >= task.requiredVolunteers) {
       task.status = 'In Progress';

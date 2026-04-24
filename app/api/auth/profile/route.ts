@@ -2,19 +2,10 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { User } from '@/models';
 import { env } from '@/lib/env';
-import { getAuthToken, verifyAuthToken } from '@/lib/auth';
 
 export async function PUT(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
 
     await connectToDatabase();
     
@@ -35,7 +26,7 @@ export async function PUT(request: Request) {
     }
 
     const updatedUser = await User.findByIdAndUpdate(
-      decoded.userId,
+      userId,
       { $set: updateData },
       { new: true, runValidators: true }
     );

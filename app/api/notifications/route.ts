@@ -1,24 +1,15 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { Notification } from '@/models';
-import { getAuthToken, verifyAuthToken } from '@/lib/auth';
 
 export async function GET(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = await verifyAuthToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-
+    const userId = request.headers.get('x-user-id');
+    
     await connectToDatabase();
     
     // Fetch notifications for the user, newest first
-    const notifications = await Notification.find({ userId: decoded.id })
+    const notifications = await Notification.find({ userId })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -31,15 +22,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const decoded = await verifyAuthToken(token);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
 
     const body = await request.json();
     const { markAll, notificationId } = body;
@@ -47,9 +30,9 @@ export async function PUT(request: Request) {
     await connectToDatabase();
 
     if (markAll) {
-      await Notification.updateMany({ userId: decoded.id }, { $set: { read: true } });
+      await Notification.updateMany({ userId }, { $set: { read: true } });
     } else if (notificationId) {
-      await Notification.updateOne({ _id: notificationId, userId: decoded.id }, { $set: { read: true } });
+      await Notification.updateOne({ _id: notificationId, userId }, { $set: { read: true } });
     }
 
     return NextResponse.json({ success: true });
@@ -61,13 +44,10 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
     try {
-        const token = getAuthToken(request);
-        if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        const decoded = await verifyAuthToken(token);
-        if (!decoded) return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+        const userId = request.headers.get('x-user-id');
 
         await connectToDatabase();
-        await Notification.deleteMany({ userId: decoded.id });
+        await Notification.deleteMany({ userId });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Delete notifications error:', error);

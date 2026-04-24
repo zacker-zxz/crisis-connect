@@ -1,7 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import { getAuthToken, verifyAuthToken } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Task, User } from "@/models";
 import { rateLimiter } from "@/lib/rateLimiter";
@@ -28,25 +27,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    const token = getAuthToken(req);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = req.headers.get('x-user-id');
+    const role = req.headers.get('x-user-role');
 
-    let decoded: { userId: string; role: "ngo" | "volunteer" };
-    try {
-      decoded = verifyAuthToken(token, env.JWT_SECRET);
-    } catch {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    if (decoded.role !== "volunteer") {
+    if (role !== "volunteer") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await connectToDatabase();
 
-    const volunteerDoc = await User.findById(decoded.userId)
+    const volunteerDoc = await User.findById(userId)
       .select("skills location name")
       .lean();
 
@@ -66,7 +56,7 @@ export async function POST(req: Request) {
       .sort({ createdAt: -1 })
       .lean();
 
-    const volunteerId = String(decoded.userId);
+    const volunteerId = String(userId);
     const eligible = rawTasks.filter((t) => {
       const ids = (t.assignedVolunteers || []).map((id) => String(id));
       return !ids.includes(volunteerId);

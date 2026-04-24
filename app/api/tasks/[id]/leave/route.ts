@@ -1,25 +1,16 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { Task } from '@/models';
-import { env } from '@/lib/env';
-import { getAuthToken, verifyAuthToken } from '@/lib/auth';
+import { Task, User, Notification } from '@/models';
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
 
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
-
-    if (decoded.role !== 'volunteer') {
+    if (role !== 'volunteer') {
       return NextResponse.json({ error: 'Forbidden: Only volunteers can leave missions' }, { status: 403 });
     }
 
@@ -31,7 +22,7 @@ export async function POST(
       return NextResponse.json({ error: 'Mission not found' }, { status: 404 });
     }
 
-    const volunteerId = String(decoded.userId);
+    const volunteerId = String(userId);
     const assigned = (task.assignedVolunteers || []).map((v: any) => String(v));
     const hasMission = assigned.includes(volunteerId);
     if (!hasMission) {

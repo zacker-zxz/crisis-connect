@@ -7,17 +7,26 @@ import { rateLimiter } from "@/lib/rateLimiter";
 import { computeResonance, type ResonanceTaskInput } from "@/lib/resonanceEngine";
 
 async function polishReasoningWithGemini(baseReasoning: string, taskTitle: string): Promise<string> {
-  if (!env.GEMINI_API_KEY?.trim()) return baseReasoning;
-  try {
-    const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const prompt = `You are Guardian AI for Crisis Connect. Rewrite the following resonance briefing in 1–2 sentences, clinical and inspiring, under 280 characters. Do not change any numbers or percentages. Task: "${taskTitle}". Text: ${baseReasoning}`;
-    const result = await model.generateContent(prompt);
-    const text = (await result.response.text()).trim().replace(/^["']|["']$/g, "");
-    return text.length > 10 ? text : baseReasoning;
-  } catch {
-    return baseReasoning;
+  const keys = [env.GEMINI_API_KEY, env.GEMINI_API_KEY_BACKUP].filter(Boolean) as string[];
+  if (keys.length === 0) return baseReasoning;
+
+  for (const apiKey of keys) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `You are Guardian AI for Crisis Connect. Rewrite the following resonance briefing in 1–2 sentences, clinical and inspiring, under 280 characters. Do not change any numbers or percentages. Task: "${taskTitle}". Text: ${baseReasoning}`;
+      const result = await model.generateContent(prompt);
+      const text = (await result.response.text()).trim().replace(/^["']|["']$/g, "");
+      return text.length > 10 ? text : baseReasoning;
+    } catch (err: any) {
+      const errorStr = String(err).toLowerCase();
+      if (err?.status === 429 || errorStr.includes('quota') || errorStr.includes('429')) {
+        continue; // Quota exhausted, try next key
+      }
+      break; // Other error, exit loop
+    }
   }
+  return baseReasoning;
 }
 
 export async function POST(req: Request) {

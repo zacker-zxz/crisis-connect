@@ -8,8 +8,8 @@ export async function GET(request: Request) {
     
     await connectToDatabase();
     
-    // Fetch notifications for the user, newest first
-    const notifications = await Notification.find({ userId })
+    // Fetch unread notifications for the user, newest first
+    const notifications = await Notification.find({ userId, read: false })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -30,7 +30,7 @@ export async function PUT(request: Request) {
     await connectToDatabase();
 
     if (markAll) {
-      await Notification.updateMany({ userId }, { $set: { read: true } });
+      await Notification.updateMany({ userId, read: false }, { $set: { read: true } });
     } else if (notificationId) {
       await Notification.updateOne({ _id: notificationId, userId }, { $set: { read: true } });
     }
@@ -47,7 +47,8 @@ export async function DELETE(request: Request) {
         const userId = request.headers.get('x-user-id');
 
         await connectToDatabase();
-        await Notification.deleteMany({ userId });
+        // Only delete notifications that have been read (viewed by the user)
+        await Notification.deleteMany({ userId, read: true });
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Delete notifications error:', error);

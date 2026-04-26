@@ -18,6 +18,7 @@ interface User {
   location?: { lat: number; lng: number; address: string };
   organizationName?: string;
   publicDescription?: string;
+  phone?: string;
 }
 
 interface AuthState {
@@ -69,9 +70,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   logout: () => {
+    // Clean up read notifications from DB before clearing session
+    const token = get().token;
+    if (token && typeof window !== 'undefined') {
+      fetch('/api/notifications', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(() => {});
+    }
+
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      // Clear local notification store
+      localStorage.removeItem('notification-storage');
     }
     set({ token: null, user: null });
   },

@@ -159,19 +159,9 @@ export default function VolunteerLayout({ children }: { children: React.ReactNod
         if (res.ok) {
           const newNotifs = await res.json();
           if (newNotifs && newNotifs.length > 0) {
-            // Add them to local store
-            const { addNotification } = useNotificationStore.getState();
+            const { addDbNotification } = useNotificationStore.getState();
             newNotifs.forEach((n: any) => {
-              addNotification({
-                title: n.title,
-                message: n.message,
-                type: n.type as any,
-              });
-            });
-            // Clear from backend
-            await fetch('/api/notifications', {
-              method: 'DELETE',
-              headers: { Authorization: `Bearer ${token}` }
+              addDbNotification(n);
             });
           }
         }
@@ -181,7 +171,7 @@ export default function VolunteerLayout({ children }: { children: React.ReactNod
     };
 
     fetchNotifications();
-    const intervalId = setInterval(fetchNotifications, 15000); // Check every 15s
+    const intervalId = setInterval(fetchNotifications, 15000);
     return () => clearInterval(intervalId);
   }, [token]);
 
@@ -297,9 +287,21 @@ export default function VolunteerLayout({ children }: { children: React.ReactNod
                   {/* Notifications */}
                   <div className="relative" ref={notifRef}>
                        <button 
-                        onClick={() => {
+                        onClick={async () => {
                           setNotifOpen(!notifOpen);
-                          if(!notifOpen) markAllAsRead();
+                          if(!notifOpen) {
+                            markAllAsRead();
+                            // Mark as read in DB
+                            if (token) {
+                              try {
+                                await fetch('/api/notifications', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                  body: JSON.stringify({ markAll: true })
+                                });
+                              } catch { /* ignore */ }
+                            }
+                          }
                         }}
                         className={`relative p-3 rounded-xl transition-all ${notifOpen ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'}`}
                       >

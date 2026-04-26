@@ -3,7 +3,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Star, MapPin, Mail, ShieldCheck,
-  X, Phone, Calendar, Award, ClipboardList, UserCheck
+  X, Phone, Calendar, Award, ClipboardList, UserCheck,
+  Users, AlertTriangle, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { NGO_SEED_TEAM } from '@/lib/ngoTeamSeed';
@@ -19,8 +20,20 @@ interface Volunteer {
   completedMissions?: number;
   rating?: number;
   certifications?: string[];
-  availability?: string;
+  availability?: string | { day: string; enabled: boolean; start: string; end: string }[];
   bio?: string;
+}
+
+interface MissionTask {
+  _id: string;
+  title: string;
+  priority: 'Critical' | 'Urgent' | 'Medium' | 'Low';
+  status: string;
+  requiredVolunteers: number;
+  filledVolunteers: number;
+  assignedVolunteers: { _id: string; name: string; email: string; skills?: string[]; profileImageUrl?: string; phone?: string }[];
+  dateTime: string;
+  location?: { address?: string };
 }
 
 const bios = [
@@ -82,10 +95,13 @@ export default function VolunteersPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selected, setSelected] = useState<Volunteer | null>(null);
-  const [activeTab, setActiveTab] = useState<'network' | 'requests'>('network');
+  const [activeTab, setActiveTab] = useState<'network' | 'requests' | 'missions'>('network');
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [rejectingRequestId, setRejectingRequestId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [missions, setMissions] = useState<MissionTask[]>([]);
+  const [missionsLoading, setMissionsLoading] = useState(false);
+  const [expandedMission, setExpandedMission] = useState<string | null>(null);
   const token = useAuthStore((s) => s.token);
 
   const fetchRequests = useCallback(async () => {
@@ -113,6 +129,7 @@ export default function VolunteersPage() {
       return;
     }
     fetchRequests().finally(() => setLoading(false));
+    fetchMissions();
   }, [token, fetchRequests]);
 
   const handleRequestAction = async (requestId: string, status: string, reason?: string) => {
@@ -146,6 +163,33 @@ export default function VolunteersPage() {
     (v.location?.address || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const fetchMissions = useCallback(async () => {
+    if (!token) return;
+    setMissionsLoading(true);
+    try {
+      const res = await fetch('/api/ngo/missions-roster', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMissions(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error('Failed to fetch missions roster', e);
+    } finally {
+      setMissionsLoading(false);
+    }
+  }, [token]);
+
+  const priorityColor = (p: string) => {
+    switch(p) {
+      case 'Critical': return 'bg-red-50 text-red-600 border-red-200';
+      case 'Urgent': return 'bg-amber-50 text-amber-600 border-amber-200';
+      case 'Medium': return 'bg-blue-50 text-blue-600 border-blue-200';
+      default: return 'bg-slate-50 text-slate-600 border-slate-200';
+    }
+  };
+
   return (
     <div className="space-y-8 pb-20 relative">
       {/* Page header with decorative ring accent */}
@@ -177,6 +221,12 @@ export default function VolunteersPage() {
                 </span>
               )}
             </button>
+            <button 
+              onClick={() => { setActiveTab('missions'); fetchMissions(); }}
+              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === 'missions' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <ClipboardList className="w-3.5 h-3.5" /> By Mission
+            </button>
           </div>
 
           <div className="relative w-full md:w-80">
@@ -192,7 +242,131 @@ export default function VolunteersPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {activeTab === 'missions' && (
+        <div className="space-y-4">
+          {missionsLoading ? (
+            [1,2,3].map(i => <div key={i} className="h-28 bg-slate-100 rounded-[2rem] animate-pulse" />)
+          ) : missions.length === 0 ? (
+            <div className="py-16 text-center bg-white border border-slate-200 rounded-[3rem] shadow-sm">
+              <ClipboardList className="w-10 h-10 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-500 font-semibold">No missions found.</p>
+              <p className="text-slate-400 text-sm mt-1">Create a mission first to see volunteer assignments here.</p>
+            </div>
+          ) : (
+            missions.map((mission, i) => {
+              const isExpanded = expandedMission === mission._id;
+              const vols = mission.assignedVolunteers || [];
+              return (
+                <motion.div
+                  key={mission._id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="bg-white border border-gray-200 rounded-[2rem] shadow-sm overflow-hidden"
+                >
+                  {/* Mission Header - clickable */}
+                  <button
+                    onClick={() => setExpandedMission(isExpanded ? null : mission._id)}
+                    className="w-full p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                        mission.priority === 'Critical' ? 'bg-red-100 text-red-600' :
+                        mission.priority === 'Urgent' ? 'bg-amber-100 text-amber-600' :
+                        mission.priority === 'Medium' ? 'bg-blue-100 text-blue-600' :
+                        'bg-slate-100 text-slate-600'
+                      }`}>
+                        <AlertTriangle className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="text-base font-bold text-slate-800 truncate">{mission.title}</h3>
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          <span className={`px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${priorityColor(mission.priority)}`}>
+                            {mission.priority}
+                          </span>
+                          <span className="text-xs text-slate-400">{mission.location?.address}</span>
+                          <span className="text-xs text-slate-400">·</span>
+                          <span className="text-xs text-slate-400">
+                            {new Date(mission.dateTime).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="text-right hidden sm:block">
+                        <div className="flex items-center gap-1.5 justify-end">
+                          <Users className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-black text-slate-700">
+                            {vols.length}<span className="text-slate-400 font-semibold">/{mission.requiredVolunteers}</span>
+                          </span>
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                          {vols.length === 0 ? 'No volunteers' : `${vols.length} assigned`}
+                        </p>
+                      </div>
+                      {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+                    </div>
+                  </button>
+
+                  {/* Expanded volunteer list */}
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="border-t border-slate-100 bg-slate-50/50 p-5">
+                          {vols.length === 0 ? (
+                            <p className="text-sm text-slate-400 text-center py-4 font-medium">No volunteers assigned to this mission yet.</p>
+                          ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {vols.map(v => (
+                                <div key={v._id} className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center font-bold text-white text-sm shrink-0 shadow overflow-hidden">
+                                    {v.profileImageUrl ? (
+                                      <img src={v.profileImageUrl} alt={v.name} className="w-full h-full object-cover" />
+                                    ) : v.name?.[0] || '?'}
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-bold text-slate-800 truncate flex items-center gap-1.5">
+                                      {v.name} <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    </p>
+                                    <p className="text-xs text-slate-400 truncate">{v.email}</p>
+                                    {v.skills && v.skills.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 mt-1.5">
+                                        {v.skills.slice(0, 3).map(s => (
+                                          <span key={s} className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-[9px] font-bold">{s}</span>
+                                        ))}
+                                        {v.skills.length > 3 && <span className="text-[9px] text-slate-400 font-bold">+{v.skills.length - 3}</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); setSelected(v as unknown as Volunteer); }}
+                                    className="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 hover:border-primary/20 transition-all shrink-0"
+                                    title="View Credentials"
+                                  >
+                                    <UserCheck className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {activeTab !== 'missions' && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           [1,2,3].map(i => <div key={i} className="h-64 bg-slate-100 rounded-[2.5rem] animate-pulse" />)
         ) : activeTab === 'requests' ? (
@@ -312,7 +486,7 @@ export default function VolunteersPage() {
             </motion.div>
           ))
         )}
-      </div>
+      </div>}
 
       {/* Credentials Modal */}
       <AnimatePresence>
@@ -347,7 +521,7 @@ export default function VolunteersPage() {
                       <p className="text-white/80 text-sm mt-0.5">{selected.email}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <Star className="w-4 h-4 text-amber-300 fill-amber-300" />
-                        <span className="text-white font-bold text-sm">{selected.rating?.toFixed(1)} · {selected.completedMissions} missions</span>
+                        <span className="text-white font-bold text-sm">{(selected.rating || 4.5).toFixed(1)} · {selected.completedMissions || 0} missions</span>
                       </div>
                     </div>
                   </div>
@@ -382,7 +556,14 @@ export default function VolunteersPage() {
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl border border-gray-100">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Availability</p>
-                      <p className="text-sm font-bold text-slate-800">{selected.availability || 'Flexible'}</p>
+                      <p className="text-sm font-bold text-slate-800">
+                        {typeof selected.availability === 'string' 
+                          ? selected.availability 
+                          : Array.isArray(selected.availability)
+                            ? selected.availability.filter(a => a.enabled).map(a => a.day.substring(0, 3)).join(', ') || 'Flexible'
+                            : 'Flexible'
+                        }
+                      </p>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-2xl border border-gray-100">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>

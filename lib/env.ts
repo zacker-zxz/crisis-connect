@@ -4,6 +4,7 @@ const envSchema = z.object({
   MONGODB_URI: z.string().url().or(z.string()), // More lenient for local/broken formats
   JWT_SECRET: z.string().min(1), // Relaxed for dev, but still required
   GEMINI_API_KEY: z.string().optional(),
+  GEMINI_API_KEY_BACKUP: z.string().optional(),
   NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: z.string().optional(),
   NEXT_PUBLIC_BASE_URL: z.string().url().optional(),
 });

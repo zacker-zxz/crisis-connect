@@ -9,6 +9,7 @@ const UserSchema = new Schema({
   organizationName: { type: String },
   publicDescription: { type: String },
   profileImageUrl: { type: String },
+  phone: { type: String },
   availability: [{
     day: { type: String },
     enabled: { type: Boolean },

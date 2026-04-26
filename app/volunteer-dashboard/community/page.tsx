@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Building2, MapPin, Users } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useNotificationStore } from '@/store/notificationStore';
+import { useRouter } from 'next/navigation';
 
 interface NGOItem {
   _id: string;
@@ -19,7 +20,8 @@ export default function VolunteerCommunityPage() {
   const [ngos, setNgos] = useState<NGOItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState<string | null>(null);
-  const [existingRequests, setExistingRequests] = useState<string[]>([]);
+  const [existingRequests, setExistingRequests] = useState<any[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,7 +36,7 @@ export default function VolunteerCommunityPage() {
         
         if (reqsRes.ok) {
           const reqsData = await reqsRes.json();
-          setExistingRequests(reqsData.map((r: any) => r.ngoId));
+          setExistingRequests(reqsData);
         }
       } catch {
         setNgos([]);
@@ -48,6 +50,12 @@ export default function VolunteerCommunityPage() {
   const sendRequest = async (ngoId: string) => {
     if (!user) {
       alert('Please sign in again to send requests.');
+      return;
+    }
+
+    if (!user.phone) {
+      alert("Please update your contact number in Settings before requesting to join an NGO.");
+      router.push('/volunteer-dashboard/settings');
       return;
     }
 
@@ -65,7 +73,7 @@ export default function VolunteerCommunityPage() {
         alert(data.error || 'Failed to send request');
         return;
       }
-      setExistingRequests(prev => [...prev, ngoId]);
+      setExistingRequests(prev => [...prev, { ngoId, status: 'Pending' }]);
       
       addNotification({
         title: 'Join Request Dispatched',
@@ -101,36 +109,73 @@ export default function VolunteerCommunityPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {ngos.map((ngo) => (
-            <div key={ngo._id} className="bg-white rounded-3xl border border-slate-200 p-7 shadow-sm">
-              <div className="flex items-start justify-between gap-4 mb-5">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">{ngo.organizationName || ngo.name}</h3>
-                  <p className="text-xs text-slate-500 mt-1">{ngo.email}</p>
+          {ngos.map((ngo) => {
+            const request = existingRequests.find(r => r.ngoId === ngo._id);
+            const isPending = request?.status === 'Pending';
+            const isApproved = request?.status === 'Approved';
+            const isRejected = request?.status === 'Rejected';
+            
+            let btnLabel = 'JOIN NGO';
+            let disabled = false;
+            
+            if (requesting === ngo._id) {
+              btnLabel = 'Sending...';
+              disabled = true;
+            } else if (isPending) {
+              btnLabel = 'REQUESTED';
+              disabled = true;
+            } else if (isApproved) {
+              btnLabel = 'JOINED';
+              disabled = true;
+            } else if (isRejected) {
+              const rejectedAt = new Date(request.updatedAt || request.createdAt || Date.now()).getTime();
+              const daysSince = (Date.now() - rejectedAt) / (1000 * 60 * 60 * 24);
+              if (daysSince < 14) {
+                btnLabel = `COOLDOWN (${Math.ceil(14 - daysSince)} DAYS)`;
+                disabled = true;
+              } else {
+                btnLabel = 'RE-APPLY';
+                disabled = false;
+              }
+            }
+
+            return (
+              <div key={ngo._id} className="bg-white rounded-3xl border border-slate-200 p-7 shadow-sm">
+                <div className="flex items-start justify-between gap-4 mb-5">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">{ngo.organizationName || ngo.name}</h3>
+                    <p className="text-xs text-slate-500 mt-1">{ngo.email}</p>
+                  </div>
+                  <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-primary" />
+                  </div>
                 </div>
-                <div className="w-11 h-11 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-primary" />
+
+                <p className="text-sm text-slate-600 leading-relaxed mb-4 min-h-[42px]">
+                  {ngo.publicDescription || 'Community-led organization supporting crisis response and rehabilitation.'}
+                </p>
+
+                <div className="flex items-center text-xs text-slate-500 mb-6">
+                  <MapPin className="w-4 h-4 mr-1.5 text-primary" />
+                  {ngo.location?.address || 'Location not specified'}
                 </div>
+
+                <button
+                  onClick={() => sendRequest(ngo._id)}
+                  disabled={disabled}
+                  className={`w-full py-4 rounded-2xl font-black transition-all uppercase tracking-widest text-xs shadow-lg shadow-primary/20 ${
+                    disabled && btnLabel.includes('COOLDOWN') 
+                      ? 'bg-rose-50 text-rose-500 border border-rose-200 opacity-100' 
+                      : disabled 
+                      ? 'opacity-50 bg-slate-200 text-slate-500' 
+                      : 'bg-primary text-white hover:bg-primary/90'
+                  }`}
+                >
+                  {btnLabel}
+                </button>
               </div>
-
-              <p className="text-sm text-slate-600 leading-relaxed mb-4 min-h-[42px]">
-                {ngo.publicDescription || 'Community-led organization supporting crisis response and rehabilitation.'}
-              </p>
-
-              <div className="flex items-center text-xs text-slate-500 mb-6">
-                <MapPin className="w-4 h-4 mr-1.5 text-primary" />
-                {ngo.location?.address || 'Location not specified'}
-              </div>
-
-              <button
-                onClick={() => sendRequest(ngo._id)}
-                disabled={requesting === ngo._id || existingRequests.includes(ngo._id)}
-                className="w-full py-4 rounded-2xl bg-primary text-white font-black hover:bg-primary/90 disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-500 transition-all uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
-              >
-                {requesting === ngo._id ? 'Sending...' : existingRequests.includes(ngo._id) ? 'REQUESTED' : 'JOIN NGO'}
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

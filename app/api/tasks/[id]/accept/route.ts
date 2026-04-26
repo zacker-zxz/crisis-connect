@@ -40,6 +40,16 @@ export async function POST(
     }
     await task.save();
 
+    // Notify the NGO who owns this mission
+    const volunteer = await User.findById(userId).select('name');
+    const volName = volunteer?.name || 'A volunteer';
+    await Notification.create({
+      userId: task.ngoId,
+      title: 'Volunteer Joined Mission',
+      message: `${volName} has joined your mission "${task.title}".`,
+      type: 'mission'
+    });
+
     return NextResponse.json({ success: true, task }, { status: 200 });
   } catch (error: any) {
     console.error('Accept mission error:', error);

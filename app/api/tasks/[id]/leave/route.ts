@@ -38,6 +38,16 @@ export async function POST(
     }
     await task.save();
 
+    // Notify the NGO who owns this mission
+    const volunteer = await User.findById(userId).select('name');
+    const volName = volunteer?.name || 'A volunteer';
+    await Notification.create({
+      userId: task.ngoId,
+      title: 'Volunteer Left Mission',
+      message: `${volName} has left your mission "${task.title}".`,
+      type: 'alert'
+    });
+
     return NextResponse.json({ success: true, task }, { status: 200 });
   } catch (error: any) {
     console.error('Leave mission error:', error);

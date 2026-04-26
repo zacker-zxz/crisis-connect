@@ -25,6 +25,7 @@ export default function VolunteerSettingsPage() {
 
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
   const [skills, setSkills] = useState<string[]>(user?.skills || []);
   const [customSkill, setCustomSkill] = useState('');
   const [profileImageUrl, setProfileImageUrl] = useState(user?.profileImageUrl || '');
@@ -95,6 +96,7 @@ export default function VolunteerSettingsPage() {
         body: JSON.stringify({
           name,
           email,
+          phone,
           skills: selectedSkills,
           availability,
           profileImageUrl
@@ -212,6 +214,16 @@ export default function VolunteerSettingsPage() {
                             onChange={(e) => setEmail(e.target.value)} 
                             className="w-full bg-slate-50 border-2 border-transparent rounded-[2rem] py-6 px-10 text-slate-900 font-black text-base focus:outline-none focus:border-primary focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
                             placeholder="agent@crisisconnect.com"
+                          />
+                      </div>
+                      <div className="space-y-4 md:col-span-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] ml-2">Contact Number</label>
+                          <input 
+                            type="tel" 
+                            value={phone} 
+                            onChange={(e) => setPhone(e.target.value)} 
+                            className="w-full bg-slate-50 border-2 border-transparent rounded-[2rem] py-6 px-10 text-slate-900 font-black text-base focus:outline-none focus:border-primary focus:bg-white transition-all shadow-inner placeholder:text-slate-300"
+                            placeholder="+1 (555) 000-0000"
                           />
                       </div>
                   </div>

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { NGORequest, User, Notification } from '@/models';
-import { NGORequest, User, Notification } from '@/models';
 
 export async function POST(request: Request) {
   try {
@@ -29,11 +28,27 @@ export async function POST(request: Request) {
 
     const existing = await NGORequest.findOne({
       ngoId,
-      volunteerId: userId,
-      status: 'Pending',
+      volunteerId: userId
     });
     if (existing) {
-      return NextResponse.json({ error: 'Request already pending' }, { status: 409 });
+      if (existing.status === 'Rejected') {
+        const cooldownDays = 14;
+        // The createdAt/updatedAt fields are maintained by Mongoose timestamps
+        const rejectedAt = new Date((existing as any).updatedAt || (existing as any).createdAt || Date.now()).getTime();
+        const daysSinceRejection = (Date.now() - rejectedAt) / (1000 * 60 * 60 * 24);
+        
+        if (daysSinceRejection < cooldownDays) {
+          const daysLeft = Math.ceil(cooldownDays - daysSinceRejection);
+          return NextResponse.json({ 
+            error: `Your previous request to join this NGO was rejected. You can re-apply in ${daysLeft} days.` 
+          }, { status: 403 });
+        } else {
+          // Cooldown over. Delete old rejected request to make way for a new one
+          await NGORequest.findByIdAndDelete(existing._id);
+        }
+      } else {
+        return NextResponse.json({ error: 'Request already pending or approved' }, { status: 409 });
+      }
     }
 
     const newRequest = await NGORequest.create({
@@ -41,6 +56,17 @@ export async function POST(request: Request) {
       volunteerId: userId,
       message,
       status: 'Pending',
+    });
+
+    // Notify the NGO about the join request
+    const volunteer = await User.findById(userId).select('name');
+    const volName = volunteer?.name || 'A volunteer';
+    const ngoName = ngo?.organizationName || ngo?.name || 'your organization';
+    await Notification.create({
+      userId: ngoId,
+      title: 'New Join Request',
+      message: `${volName} wants to join ${ngoName}.`,
+      type: 'join'
     });
 
     return NextResponse.json({ id: newRequest._id, status: newRequest.status }, { status: 201 });
@@ -116,9 +142,12 @@ export async function PUT(request: Request) {
         type: 'alert'
       });
 
-      // Automatically delete the request so the volunteer can re-apply and it disappears from their pending list
-      await NGORequest.findByIdAndDelete(requestId);
-      return NextResponse.json({ success: true, deleted: true });
+      const update = await NGORequest.findByIdAndUpdate(
+        requestId,
+        { status: 'Rejected', rejectionReason: reason || '' },
+        { new: true }
+      );
+      return NextResponse.json(update);
     }
 
     return NextResponse.json({ error: 'Invalid status' }, { status: 400 });

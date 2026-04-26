@@ -13,9 +13,10 @@ export async function PUT(request: Request) {
     
     // Allowed fields to update
     const ALLOWED_FIELDS = [
-      'name', 'email', 'organizationName', 'publicDescription',
+      'name', 'organizationName', 'publicDescription',
       'skills', 'phone', 'website', 'sector', 'city', 'operatingRegions',
-      'notifyOnVolunteerJoin', 'notifyOnDeadline', 'notifyOnCapacityFull', 'emailNotifications'
+      'notifyOnVolunteerJoin', 'notifyOnDeadline', 'notifyOnCapacityFull', 'emailNotifications',
+      'profileImageUrl', 'availability'
     ];
 
     const updateData: any = {};

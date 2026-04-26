@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { Task } from '@/models';
-import { Task } from '@/models';
 
 // GET a single task
 export async function GET(

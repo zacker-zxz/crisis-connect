@@ -86,8 +86,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No image provided" }, { status: 400 });
     }
 
-    const apiKey = env.GEMINI_API_KEY;
-    if (!apiKey) {
+    const keys = [env.GEMINI_API_KEY, env.GEMINI_API_KEY_BACKUP].filter(Boolean) as string[];
+    if (keys.length === 0) {
       return NextResponse.json({ error: "Gemini API Key missing in environment" }, { status: 500 });
     }
 
@@ -135,38 +135,58 @@ export async function POST(req: Request) {
       ]
     };
 
-    // Resolve an actually available model for THIS key.
-    const discovered = await listGenerateContentModels(apiKey);
-    const candidates = pickBestVisionCandidate(discovered);
-    const fallback = [
-      "gemini-2.0-flash",
-      "gemini-2.0-flash-lite",
-      "gemini-pro-vision",
-      "gemini-1.5-flash",
-    ];
-    const modelsToTry = candidates.length ? candidates : fallback;
-
-    const genAI = new GoogleGenerativeAI(apiKey);
     let lastError = "No compatible model found";
+    let discovered: string[] = [];
 
-    for (const modelName of modelsToTry) {
+    for (const [index, apiKey] of keys.entries()) {
       try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(payload as any);
-        const response = await result.response;
-        const text = response.text()?.trim() ?? "";
-        if (!text) continue;
+        console.log(`[Gemini Analyze] Attempting with Key #${index + 1}...`);
+        discovered = await listGenerateContentModels(apiKey);
+        const candidates = pickBestVisionCandidate(discovered);
+        const fallback = [
+          "gemini-2.0-flash",
+          "gemini-2.0-flash-lite",
+          "gemini-pro-vision",
+          "gemini-1.5-flash",
+        ];
+        const modelsToTry = candidates.length ? candidates : fallback;
 
-        const start = text.indexOf("{");
-        const end = text.lastIndexOf("}");
-        if (start === -1 || end === -1) {
-          lastError = `Model ${modelName} returned non-JSON output`;
-          continue;
+        const genAI = new GoogleGenerativeAI(apiKey);
+
+        for (const modelName of modelsToTry) {
+          try {
+            const model = genAI.getGenerativeModel({ model: modelName });
+            const result = await model.generateContent(payload as any);
+            const response = await result.response;
+            const text = response.text()?.trim() ?? "";
+            if (!text) continue;
+
+            const start = text.indexOf("{");
+            const end = text.lastIndexOf("}");
+            if (start === -1 || end === -1) {
+              lastError = `Model ${modelName} returned non-JSON output`;
+              continue;
+            }
+            const jsonStr = text.substring(start, end + 1);
+            console.log(`[Gemini Analyze] Success with Key #${index + 1} using model ${modelName}`);
+            return NextResponse.json(JSON.parse(jsonStr));
+          } catch (err: any) {
+            lastError = err?.message || String(err);
+            const isQuotaError = err?.status === 429 || lastError.toLowerCase().includes('quota') || lastError.toLowerCase().includes('429');
+            
+            if (isQuotaError) {
+              console.warn(`[Gemini Analyze] Key #${index + 1} failed on model ${modelName} (Quota). Trying next model...`);
+              continue; // Instead of breaking the key, try the next fallback model for this key
+            }
+          }
         }
-        const jsonStr = text.substring(start, end + 1);
-        return NextResponse.json(JSON.parse(jsonStr));
       } catch (err: any) {
-        lastError = err?.message || String(err);
+         lastError = err?.message || String(err);
+         const isQuotaError = err?.status === 429 || lastError.toLowerCase().includes('quota') || lastError.toLowerCase().includes('429');
+         if (isQuotaError) {
+            console.warn(`[Gemini Analyze] Key #${index + 1} failed listing models. Trying next key...`);
+            continue; 
+         }
       }
     }
 
@@ -175,8 +195,8 @@ export async function POST(req: Request) {
         error: `AI analysis failed: ${lastError}`,
         hint:
           discovered.length === 0
-            ? "ListModels returned no generateContent models for this key (check key/project/billing)."
-            : `Tried models: ${modelsToTry.slice(0, 8).join(", ")}${modelsToTry.length > 8 ? ", …" : ""}`,
+            ? "ListModels returned no generateContent models (check key/project/billing)."
+            : "Tried multiple models and keys.",
       },
       { status: 500 }
     );

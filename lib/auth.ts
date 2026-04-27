@@ -45,3 +45,14 @@ export function clearAuthCookie(response: NextResponse) {
 export function verifyAuthToken(token: string, secret: string) {
   return jwt.verify(token, secret) as { userId: string; role: 'ngo' | 'volunteer' };
 }
+
+import { jwtVerify } from 'jose';
+
+/**
+ * Edge-compatible JWT verification using jose.
+ */
+export async function verifyAuthTokenEdge(token: string, secret: string) {
+  const secretKey = new TextEncoder().encode(secret);
+  const { payload } = await jwtVerify(token, secretKey);
+  return payload as { userId: string; role: 'ngo' | 'volunteer' };
+}

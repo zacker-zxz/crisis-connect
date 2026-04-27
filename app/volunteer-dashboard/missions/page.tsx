@@ -155,6 +155,13 @@ export default function MissionsPage() {
 
   const handleAccept = async (task: Task) => {
     if (!token) return;
+
+    if (!user?.phone) {
+      alert("Please update your contact number in Settings before accepting a mission.");
+      router.push('/volunteer-dashboard/settings');
+      return;
+    }
+
     setAccepting(task._id);
     try {
       const res = await fetch(`/api/tasks/${task._id}/accept`, {

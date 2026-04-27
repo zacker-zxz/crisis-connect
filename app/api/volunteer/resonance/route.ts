@@ -1,24 +1,32 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
-import { getAuthToken, verifyAuthToken } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Task, User } from "@/models";
 import { rateLimiter } from "@/lib/rateLimiter";
 import { computeResonance, type ResonanceTaskInput } from "@/lib/resonanceEngine";
 
 async function polishReasoningWithGemini(baseReasoning: string, taskTitle: string): Promise<string> {
-  if (!env.GEMINI_API_KEY?.trim()) return baseReasoning;
-  try {
-    const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    const prompt = `You are Guardian AI for Crisis Connect. Rewrite the following resonance briefing in 1–2 sentences, clinical and inspiring, under 280 characters. Do not change any numbers or percentages. Task: "${taskTitle}". Text: ${baseReasoning}`;
-    const result = await model.generateContent(prompt);
-    const text = (await result.response.text()).trim().replace(/^["']|["']$/g, "");
-    return text.length > 10 ? text : baseReasoning;
-  } catch {
-    return baseReasoning;
+  const keys = [env.GEMINI_API_KEY, env.GEMINI_API_KEY_BACKUP].filter(Boolean) as string[];
+  if (keys.length === 0) return baseReasoning;
+
+  for (const apiKey of keys) {
+    try {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `You are Guardian AI for Crisis Connect. Rewrite the following resonance briefing in 1–2 sentences, clinical and inspiring, under 280 characters. Do not change any numbers or percentages. Task: "${taskTitle}". Text: ${baseReasoning}`;
+      const result = await model.generateContent(prompt);
+      const text = (await result.response.text()).trim().replace(/^["']|["']$/g, "");
+      return text.length > 10 ? text : baseReasoning;
+    } catch (err: any) {
+      const errorStr = String(err).toLowerCase();
+      if (err?.status === 429 || errorStr.includes('quota') || errorStr.includes('429')) {
+        continue; // Quota exhausted, try next key
+      }
+      break; // Other error, exit loop
+    }
   }
+  return baseReasoning;
 }
 
 export async function POST(req: Request) {
@@ -28,25 +36,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    const token = getAuthToken(req);
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const userId = req.headers.get('x-user-id');
+    const role = req.headers.get('x-user-role');
 
-    let decoded: { userId: string; role: "ngo" | "volunteer" };
-    try {
-      decoded = verifyAuthToken(token, env.JWT_SECRET);
-    } catch {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    if (decoded.role !== "volunteer") {
+    if (role !== "volunteer") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await connectToDatabase();
 
-    const volunteerDoc = await User.findById(decoded.userId)
+    const volunteerDoc = await User.findById(userId)
       .select("skills location name")
       .lean();
 
@@ -66,7 +65,7 @@ export async function POST(req: Request) {
       .sort({ createdAt: -1 })
       .lean();
 
-    const volunteerId = String(decoded.userId);
+    const volunteerId = String(userId);
     const eligible = rawTasks.filter((t) => {
       const ids = (t.assignedVolunteers || []).map((id) => String(id));
       return !ids.includes(volunteerId);

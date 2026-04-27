@@ -146,10 +146,48 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const openNotifications = () => {
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const token = useAuthStore.getState().token;
+      if (!token) return;
+      try {
+        const res = await fetch('/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const newNotifs = await res.json();
+          if (newNotifs && newNotifs.length > 0) {
+            const { addDbNotification } = useNotificationStore.getState();
+            newNotifs.forEach((n: any) => {
+              addDbNotification(n);
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch notifications', err);
+      }
+    };
+
+    fetchNotifications();
+    const intervalId = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const openNotifications = async () => {
     setNotifOpen(prev => !prev);
     if (!notifOpen) {
       markAllAsRead();
+      // Mark as read in DB so they get cleaned up on logout
+      const token = useAuthStore.getState().token;
+      if (token) {
+        try {
+          await fetch('/api/notifications', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ markAll: true })
+          });
+        } catch { /* ignore */ }
+      }
     }
   };
 

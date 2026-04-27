@@ -149,6 +149,32 @@ export default function VolunteerLayout({ children }: { children: React.ReactNod
     refreshUser();
   }, []);
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch('/api/notifications', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const newNotifs = await res.json();
+          if (newNotifs && newNotifs.length > 0) {
+            const { addDbNotification } = useNotificationStore.getState();
+            newNotifs.forEach((n: any) => {
+              addDbNotification(n);
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch notifications', err);
+      }
+    };
+
+    fetchNotifications();
+    const intervalId = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(intervalId);
+  }, [token]);
+
   const navItems = [
     { name: 'Dashboard', href: '/volunteer-dashboard', icon: Home },
     { name: 'Available Missions', href: '/volunteer-dashboard/missions', icon: ClipboardList },
@@ -261,9 +287,21 @@ export default function VolunteerLayout({ children }: { children: React.ReactNod
                   {/* Notifications */}
                   <div className="relative" ref={notifRef}>
                        <button 
-                        onClick={() => {
+                        onClick={async () => {
                           setNotifOpen(!notifOpen);
-                          if(!notifOpen) markAllAsRead();
+                          if(!notifOpen) {
+                            markAllAsRead();
+                            // Mark as read in DB
+                            if (token) {
+                              try {
+                                await fetch('/api/notifications', {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                  body: JSON.stringify({ markAll: true })
+                                });
+                              } catch { /* ignore */ }
+                            }
+                          }
                         }}
                         className={`relative p-3 rounded-xl transition-all ${notifOpen ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900'}`}
                       >

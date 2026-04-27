@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { Task } from '@/models';
-import { env } from '@/lib/env';
-import { getAuthToken, verifyAuthToken } from '@/lib/auth';
 
 // GET a single task
 export async function GET(
@@ -29,16 +27,10 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
 
-    if (decoded.role !== 'ngo') {
+    if (role !== 'ngo') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -50,7 +42,7 @@ export async function PUT(
     // Check ownership
     const task = await Task.findById(id);
     if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
-    if (task.ngoId.toString() !== decoded.userId) {
+    if (task.ngoId.toString() !== userId) {
       return NextResponse.json({ error: 'Forbidden: You do not own this mission' }, { status: 403 });
     }
 
@@ -68,16 +60,10 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const token = getAuthToken(request);
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    const decoded = verifyAuthToken(token, env.JWT_SECRET);
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
-    }
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
 
-    if (decoded.role !== 'ngo') {
+    if (role !== 'ngo') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
@@ -86,7 +72,7 @@ export async function DELETE(
     await connectToDatabase();
     const task = await Task.findById(id);
     if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
-    if (task.ngoId.toString() !== decoded.userId) {
+    if (task.ngoId.toString() !== userId) {
       return NextResponse.json({ error: 'Forbidden: You do not own this mission' }, { status: 403 });
     }
 

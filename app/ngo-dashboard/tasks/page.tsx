@@ -176,16 +176,16 @@ export default function ActiveTasksPage() {
         </div>
       </div>
 
-      <div className="relative overflow-hidden bg-white border border-gray-200 shadow-sm rounded-[2rem]">
+      <div className="relative bg-white border border-gray-200 shadow-sm rounded-[2rem]">
         {/* Gradient accent bar */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-secondary to-primary opacity-60 rounded-t-[2rem]" />
         {/* Dot grid bottom-right decoration */}
-        <div className="absolute bottom-0 right-0 w-44 h-44 pointer-events-none overflow-hidden">
+        <div className="absolute bottom-0 right-0 w-44 h-44 pointer-events-none overflow-hidden rounded-br-[2rem]">
           <div className="grid grid-cols-6 gap-2 opacity-[0.04] p-4">
             {Array.from({length: 36}).map((_,i) => <div key={i} className="w-1.5 h-1.5 rounded-full bg-slate-800" />)}
           </div>
         </div>
-        <div className="overflow-x-auto min-h-[450px]">
+        <div className="overflow-x-auto min-h-[450px] pb-20">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-gray-200 bg-slate-50/50">

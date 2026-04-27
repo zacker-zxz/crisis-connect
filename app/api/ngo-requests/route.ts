@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
-import { NGORequest, User, Notification } from '@/models';
+import { NGORequest, User, Notification, Task } from '@/models';
 
 export async function POST(request: Request) {
   try {
@@ -156,3 +156,39 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const userId = request.headers.get('x-user-id');
+    const role = request.headers.get('x-user-role');
+    
+    if (role !== 'ngo') {
+      return NextResponse.json({ error: 'Only NGOs can remove volunteers' }, { status: 403 });
+    }
+    
+    const { searchParams } = new URL(request.url);
+    const volunteerId = searchParams.get('volunteerId');
+    
+    if (!volunteerId) return NextResponse.json({ error: 'Missing volunteerId' }, { status: 400 });
+    
+    await connectToDatabase();
+    
+    const result = await NGORequest.deleteOne({ ngoId: userId, volunteerId: volunteerId });
+    
+    if (result.deletedCount === 0) {
+      return NextResponse.json({ error: 'Volunteer association not found' }, { status: 404 });
+    }
+
+    // Also remove from any assigned tasks
+    await Task.updateMany(
+      { ngoId: userId, assignedVolunteers: volunteerId },
+      { $pull: { assignedVolunteers: volunteerId }, $inc: { filledVolunteers: -1 } }
+    );
+
+    return NextResponse.json({ message: 'Volunteer removed successfully' });
+  } catch (error) {
+    console.error('Remove volunteer error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+

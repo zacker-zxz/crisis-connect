@@ -1,10 +1,11 @@
 "use client"
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, Star, MapPin, Mail, ShieldCheck,
   X, Phone, Calendar, Award, ClipboardList, UserCheck,
-  Users, AlertTriangle, ChevronDown, ChevronUp
+  Users, AlertTriangle, ChevronDown, ChevronUp, Trash2
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { NGO_SEED_TEAM } from '@/lib/ngoTeamSeed';
@@ -90,6 +91,14 @@ function mergeNetworkTeam(base: Volunteer[], requests: any[]): Volunteer[] {
 }
 
 export default function VolunteersPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center">Loading database...</div>}>
+      <VolunteersContent />
+    </Suspense>
+  );
+}
+
+function VolunteersContent() {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +111,8 @@ export default function VolunteersPage() {
   const [missions, setMissions] = useState<MissionTask[]>([]);
   const [missionsLoading, setMissionsLoading] = useState(false);
   const [expandedMission, setExpandedMission] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const taskId = searchParams.get('taskId');
   const token = useAuthStore((s) => s.token);
 
   const fetchRequests = useCallback(async () => {
@@ -132,6 +143,13 @@ export default function VolunteersPage() {
     fetchMissions();
   }, [token, fetchRequests]);
 
+  useEffect(() => {
+    if (taskId) {
+      setActiveTab('missions');
+      setExpandedMission(taskId);
+    }
+  }, [taskId]);
+
   const handleRequestAction = async (requestId: string, status: string, reason?: string) => {
     if (!token) return;
     setActionLoading(requestId);
@@ -149,6 +167,30 @@ export default function VolunteersPage() {
       } else {
         const err = await res.json().catch(() => ({}));
         alert(err.error || 'Could not update request');
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleRemoveVolunteer = async (volunteerId: string) => {
+    if (!confirm('Are you sure you want to remove this volunteer from your team? This will also unassign them from any active missions.')) return;
+    if (!token) return;
+    setActionLoading(volunteerId);
+    try {
+      const res = await fetch(`/api/ngo-requests?volunteerId=${volunteerId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        await fetchRequests();
+        await fetchMissions();
+        if (selected?._id === volunteerId) setSelected(null);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || 'Could not remove volunteer');
       }
     } catch (e) {
       console.error(e);
@@ -344,13 +386,22 @@ export default function VolunteersPage() {
                                       </div>
                                     )}
                                   </div>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setSelected(v as unknown as Volunteer); }}
-                                    className="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 hover:border-primary/20 transition-all shrink-0"
-                                    title="View Credentials"
-                                  >
-                                    <UserCheck className="w-4 h-4" />
-                                  </button>
+                                  <div className="flex gap-1.5 shrink-0">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setSelected(v as unknown as Volunteer); }}
+                                      className="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-primary hover:bg-primary/5 hover:border-primary/20 transition-all"
+                                      title="View Credentials"
+                                    >
+                                      <UserCheck className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleRemoveVolunteer(v._id); }}
+                                      className="w-9 h-9 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-all"
+                                      title="Remove from Team"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -477,12 +528,21 @@ export default function VolunteersPage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setSelected(vol)}
-                className="w-full py-3.5 rounded-2xl bg-primary/10 hover:bg-primary hover:text-white border border-primary/20 text-primary font-bold text-sm transition-all flex items-center justify-center gap-2 group-hover:bg-primary group-hover:text-white"
-              >
-                <UserCheck className="w-4 h-4" /> View Credentials
-              </button>
+              <div className="grid grid-cols-2 gap-3 mt-auto relative z-10">
+                <button
+                  onClick={() => setSelected(vol)}
+                  className="py-3 rounded-2xl bg-primary/10 hover:bg-primary hover:text-white border border-primary/20 text-primary font-bold text-xs transition-all flex items-center justify-center gap-2"
+                >
+                  <UserCheck className="w-3.5 h-3.5" /> Credentials
+                </button>
+                <button
+                  onClick={() => handleRemoveVolunteer(vol._id)}
+                  disabled={actionLoading === vol._id}
+                  className="py-3 rounded-2xl bg-rose-50 hover:bg-rose-500 hover:text-white border border-rose-100 text-rose-500 font-bold text-xs transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                </button>
+              </div>
             </motion.div>
           ))
         )}

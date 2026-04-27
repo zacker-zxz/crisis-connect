@@ -2,9 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, LifeBuoy, MapPin, Phone, Send, User, X } from "lucide-react";
+import { AlertCircle, ExternalLink, LifeBuoy, MapPin, Phone, Route, Send, User, X } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useNotificationStore } from "@/store/notificationStore";
+import Map, { Layer, Marker, Source } from "react-map-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+
+const MAPBOX_TOKEN =
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
+  "pk.eyJ1IjoidGVqYXMwMzA4MDYiLCJhIjoiY21vNXNycDRhMTVwcjJ0czR3cXE3dW5uMyJ9.H8yLp4vnqiO54TYKJ4WsRg";
 
 interface TaskDetail {
   _id: string;
@@ -15,7 +23,7 @@ interface TaskDetail {
   requiredVolunteers: number;
   filledVolunteers: number;
   requiredSkills: string[];
-  location: { address: string };
+  location: { address: string; lat?: number; lng?: number };
   dateTime: string;
 }
 
@@ -28,6 +36,9 @@ export default function MissionDetailsPage() {
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => Date.now());
+  const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [routeGeoJson, setRouteGeoJson] = useState<any>(null);
+  const [mapOpen, setMapOpen] = useState(false);
   const [showSupport, setShowSupport] = useState(false);
   const [supportSubmitting, setSupportSubmitting] = useState(false);
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
@@ -54,6 +65,56 @@ export default function MissionDetailsPage() {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setCurrentLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }, []);
+
+  useEffect(() => {
+    const fetchRoute = async () => {
+      if (
+        !mapOpen ||
+        !task?.location?.lat ||
+        !task?.location?.lng ||
+        !currentLocation ||
+        !MAPBOX_TOKEN
+      ) {
+        setRouteGeoJson(null);
+        return;
+      }
+
+      try {
+        const url =
+          `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+          `${currentLocation.lng},${currentLocation.lat};${task.location.lng},${task.location.lat}` +
+          `?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const geometry = data?.routes?.[0]?.geometry;
+        if (geometry) {
+          setRouteGeoJson({
+            type: "FeatureCollection",
+            features: [{ type: "Feature", properties: {}, geometry }],
+          });
+        } else {
+          setRouteGeoJson(null);
+        }
+      } catch {
+        setRouteGeoJson(null);
+      }
+    };
+    fetchRoute();
+  }, [mapOpen, task?.location?.lat, task?.location?.lng, currentLocation]);
 
   const reachCountdown = () => {
     const userId = String(user?.id || user?._id || "");
@@ -183,7 +244,14 @@ export default function MissionDetailsPage() {
           </div>
         </div>
 
-        <div className="mt-8 flex gap-3">
+        <div className="mt-8 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => setMapOpen((v) => !v)}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100"
+          >
+            <Route className="h-4 w-4" /> {mapOpen ? "Hide Route" : "Map & Route"}
+          </button>
           <button
             onClick={() => setShowSupport(true)}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-white hover:bg-primary/90"
@@ -191,6 +259,64 @@ export default function MissionDetailsPage() {
             <LifeBuoy className="h-4 w-4" /> Support
           </button>
         </div>
+
+        {mapOpen && (
+          <div className="mt-6 overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">Route</p>
+                <p className="text-sm font-bold text-slate-900">
+                  {task.location.address}
+                </p>
+              </div>
+              {task.location.lat && task.location.lng && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${task.location.lat},${task.location.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-black uppercase tracking-widest text-white hover:bg-primary/90"
+                >
+                  Open maps <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+            </div>
+
+            <div className="h-[420px]">
+              <Map
+                mapboxAccessToken={MAPBOX_TOKEN}
+                mapStyle="mapbox://styles/mapbox/streets-v12"
+                initialViewState={{
+                  longitude: task.location.lng || 72.8777,
+                  latitude: task.location.lat || 19.076,
+                  zoom: 11,
+                }}
+                style={{ width: "100%", height: "100%" }}
+              >
+                {currentLocation && (
+                  <Marker longitude={currentLocation.lng} latitude={currentLocation.lat} color="#2563eb" />
+                )}
+                {task.location.lng && task.location.lat && (
+                  <Marker longitude={task.location.lng} latitude={task.location.lat} color="#ef4444" />
+                )}
+                {routeGeoJson && (
+                  <Source id="route" type="geojson" data={routeGeoJson}>
+                    <Layer id="route-line" type="line" paint={{ "line-color": "#14b8a6", "line-width": 4, "line-opacity": 0.9 }} />
+                  </Source>
+                )}
+              </Map>
+            </div>
+
+            {!task.location.lat || !task.location.lng ? (
+              <div className="border-t border-slate-200 bg-white px-5 py-4 text-sm text-slate-600">
+                Route unavailable: this mission is missing coordinates.
+              </div>
+            ) : !currentLocation ? (
+              <div className="border-t border-slate-200 bg-white px-5 py-4 text-sm text-slate-600">
+                Allow location access to compute your route.
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {showSupport && (

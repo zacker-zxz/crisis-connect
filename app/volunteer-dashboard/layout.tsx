@@ -1,6 +1,7 @@
 "use client"
 import React, { useState, useRef, useEffect } from 'react';
 import AuthGuard from '@/components/auth/AuthGuard';
+import LanguageSwitcher from '@/components/ui/LanguageSwitcher';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { 
@@ -389,6 +390,7 @@ export default function VolunteerLayout({ children }: { children: React.ReactNod
         onClose={() => setShowShareModal(false)} 
         score="2,450"
       />
+      <LanguageSwitcher />
     </AuthGuard>
   );
 }

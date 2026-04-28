@@ -1,78 +1,74 @@
 import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { verifyAuthTokenEdge } from '@/lib/auth';
+import type { NextRequest } from 'next/request';
+import { jwtVerify } from 'jose';
 
-const PUBLIC_PATHS = [
-  '/',
-  '/signin',
-  '/signup',
-  '/api/auth/login',
-  '/api/auth/register',
-  '/favicon.ico'
-];
+// These routes require authentication
+const AUTH_ROUTES = ['/ngo-dashboard', '/volunteer-dashboard', '/api/tasks', '/api/notifications', '/api/volunteer'];
+
+// These routes are restricted by role
+const ROLE_ROUTES = {
+  ngo: ['/ngo-dashboard', '/api/tasks/post'],
+  volunteer: ['/volunteer-dashboard', '/api/tasks/accept'],
+};
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Allow public paths
-  if (PUBLIC_PATHS.includes(pathname) || pathname.startsWith('/_next') || pathname.startsWith('/images')) {
+  // 1. Skip middleware for static assets and auth public routes
+  if (
+    pathname.startsWith('/_next') || 
+    pathname.startsWith('/static') || 
+    pathname.startsWith('/api/auth') ||
+    pathname === '/signin' ||
+    pathname === '/signup' ||
+    pathname === '/'
+  ) {
     return NextResponse.next();
   }
 
-  // 2. Extract token from cookie or Authorization header
-  let token = request.cookies.get('token')?.value;
-  if (!token) {
-    const authHeader = request.headers.get('authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.slice(7);
-    }
+  // 2. Check if the route needs protection
+  const isProtected = AUTH_ROUTES.some(route => pathname.startsWith(route));
+  
+  if (!isProtected) {
+    return NextResponse.next();
   }
 
-  // 3. Handle unauthenticated users
+  // 3. Extract Token from Cookies
+  const token = request.cookies.get('token')?.value;
+
   if (!token) {
+    // If it's an API route, return 401. Otherwise, redirect to login.
     if (pathname.startsWith('/api/')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     return NextResponse.redirect(new URL('/signin', request.url));
   }
 
   try {
-    // 4. Verify token cryptographically
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      console.error('JWT_SECRET is missing');
-      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
+    // 4. Verify Token (using jose for Edge compatibility)
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+    const role = payload.role as 'ngo' | 'volunteer';
 
-    const decoded = await verifyAuthTokenEdge(token, secret);
-
-    // 5. Enforce Role-Based Access Control (RBAC) for dashboards
-    if (pathname.startsWith('/ngo-dashboard') && decoded.role !== 'ngo') {
+    // 5. Role-Based Access Control
+    if (pathname.startsWith('/ngo-dashboard') && role !== 'ngo') {
       return NextResponse.redirect(new URL('/volunteer-dashboard', request.url));
     }
-    if (pathname.startsWith('/volunteer-dashboard') && decoded.role !== 'volunteer') {
+
+    if (pathname.startsWith('/volunteer-dashboard') && role !== 'volunteer') {
       return NextResponse.redirect(new URL('/ngo-dashboard', request.url));
     }
 
-    // 6. Inject secure headers for downstream API routes to use
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('x-user-id', decoded.userId);
-    requestHeaders.set('x-user-role', decoded.role);
-
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  } catch (error) {
-    // Token is invalid or expired
-    console.error('Middleware JWT verification failed:', error);
+    // 6. Inject role/userId headers for downstream API routes to trust
+    const response = NextResponse.next();
+    response.headers.set('x-user-id', payload.userId as string);
+    response.headers.set('x-user-role', role);
     
-    // Clear the invalid cookie
-    const response = pathname.startsWith('/api/')
-      ? NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-      : NextResponse.redirect(new URL('/signin', request.url));
-      
+    return response;
+  } catch (error) {
+    console.error('Middleware Auth Error:', error);
+    // Token is invalid or expired
+    const response = NextResponse.redirect(new URL('/signin', request.url));
     response.cookies.delete('token');
     return response;
   }
@@ -80,12 +76,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/ngo-dashboard/:path*',
+    '/volunteer-dashboard/:path*',
+    '/api/:path*',
   ],
 };

@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 // defaults to 10 req/min — tweak with RATE_LIMIT_* env vars
 
 const WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000); // 1 minute
-const MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS ?? 10);
+const MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS ?? 1000);
 
 type Bucket = {
   lastReset: number;

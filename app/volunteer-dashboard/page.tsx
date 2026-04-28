@@ -182,13 +182,32 @@ export default function VolunteerDashboardMain() {
       const data = await res.json();
       
       const userId = user?.id || user?._id;
-      const available = data.filter((t: any) => !t.assignedVolunteers?.includes(userId));
+      let available = data.filter((t: any) => !t.assignedVolunteers?.includes(userId));
       const joined = data.filter((t: any) => t.assignedVolunteers?.includes(userId));
       
-      setTasks(available.length > 0 ? available : mockRecommendations);
+      // Sort by proximity if user location is available
+      if (user?.location?.lat && user?.location?.lng) {
+        const toRad = (d: number) => (d * Math.PI) / 180;
+        const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+          const R = 6371;
+          const dLat = toRad(lat2 - lat1);
+          const dLng = toRad(lng2 - lng1);
+          const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+          return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+        };
+
+        available.sort((a: any, b: any) => {
+          const distA = (a.location?.lat && a.location?.lng) ? getDistance(user.location.lat, user.location.lng, a.location.lat, a.location.lng) : 9999;
+          const distB = (b.location?.lat && b.location?.lng) ? getDistance(user.location.lat, user.location.lng, b.location.lat, b.location.lng) : 9999;
+          return distA - distB;
+        });
+      }
+      
+      // Take top 15 nearby missions for the feed
+      setTasks(available.length > 0 ? available.slice(0, 15) : mockRecommendations.slice(0, 15));
       setActiveMissions(joined);
     } catch (err) {
-      setTasks(mockRecommendations);
+      setTasks(mockRecommendations.slice(0, 15));
     } finally {
       setLoading(false);
     }
@@ -325,7 +344,7 @@ export default function VolunteerDashboardMain() {
               Hello, <span className="text-primary">{firstName}</span>
             </h2>
             <p className="text-slate-500 text-lg max-w-2xl leading-relaxed font-medium">
-               The system has synchronized 15+ live crisis nodes. <span className="text-primary font-semibold">3 missions</span> match your profile criteria.
+               The system has synchronized live crisis nodes globally. <span className="text-primary font-semibold">{tasks.length} nearby missions</span> are matching your profile area.
             </p>
             <div className="flex flex-wrap gap-3 mt-10">
                 {user?.skills?.map(skill => (

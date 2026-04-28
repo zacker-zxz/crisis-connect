@@ -17,7 +17,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useNotificationStore } from "@/store/notificationStore";
 
 const FALLBACK_MAPBOX_TOKEN =
-  "pk.eyJ1IjoidGVqYXMwMzA4MDYiLCJhIjoiY21vNXNycDRhMTVwcjJ0czR3cXE3dW5uMyJ9.H8yLp4vnqiO54TYKJ4WsRg";
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 
 export type LiveHeatmapVariant = "volunteer" | "ngo";
 

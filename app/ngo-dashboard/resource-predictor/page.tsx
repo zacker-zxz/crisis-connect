@@ -7,7 +7,7 @@ import { AlertTriangle, Droplets, HeartPulse, Navigation, Shield, Stethoscope, W
 
 const MAPBOX_TOKEN =
   process.env.NEXT_PUBLIC_MAPBOX_TOKEN ||
-  "pk.eyJ1IjoidGVqYXMwMzA4MDYiLCJhIjoiY21vNXNycDRhMTVwcjJ0czR3cXE3dW5uMyJ9.H8yLp4vnqiO54TYKJ4WsRg";
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || '';
 
 type ResourceType = "hospital" | "clinic" | "pharmacy" | "police" | "veterinary" | "warehouse" | "blackstore";
 interface NearbyResource {

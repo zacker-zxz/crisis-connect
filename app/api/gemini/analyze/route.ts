@@ -145,7 +145,6 @@ export async function POST(req: Request) {
           "gemini-2.0-flash",
           "gemini-2.0-flash-lite",
           "gemini-pro-vision",
-          "gemini-1.5-flash",
         ];
         const modelsToTry = candidates.length ? candidates : fallback;
 

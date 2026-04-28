@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // These routes require authentication
-const AUTH_ROUTES = ['/ngo-dashboard', '/volunteer-dashboard', '/api/tasks', '/api/notifications', '/api/volunteer', '/api/gemini', '/api/ngo-requests'];
+const AUTH_ROUTES = ['/ngo-dashboard', '/volunteer-dashboard', '/api/tasks', '/api/notifications', '/api/volunteer', '/api/gemini', '/api/ngo-requests', '/api/auth/profile', '/api/auth/me'];
 
 // These routes are restricted by role
 const ROLE_ROUTES = {
@@ -14,11 +14,12 @@ const ROLE_ROUTES = {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Skip middleware for static assets and auth public routes
+  // 1. Skip middleware for static assets and public auth routes (login/register only)
   if (
     pathname.startsWith('/_next') || 
     pathname.startsWith('/static') || 
-    pathname.startsWith('/api/auth') ||
+    pathname === '/api/auth/login' ||
+    pathname === '/api/auth/register' ||
     pathname === '/signin' ||
     pathname === '/signup' ||
     pathname === '/'

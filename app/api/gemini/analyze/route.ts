@@ -158,17 +158,17 @@ export async function POST(req: Request) {
             
             if (isQuotaError) {
               console.warn(`[Gemini Analyze] Key #${index + 1} failed on model ${modelName} (Quota). Trying next model...`);
-              continue; // Instead of breaking the key, try the next fallback model for this key
+              continue; // Try next model on the same key
+            } else {
+              console.warn(`[Gemini Analyze] Key #${index + 1} encountered fatal error: ${lastError}. Moving to next API key.`);
+              break; // Fatal error (like 403 Leaked Key), break to try the next API key
             }
           }
         }
       } catch (err: any) {
          lastError = err?.message || String(err);
-         const isQuotaError = err?.status === 429 || lastError.toLowerCase().includes('quota') || lastError.toLowerCase().includes('429');
-         if (isQuotaError) {
-            console.warn(`[Gemini Analyze] Key #${index + 1} failed listing models. Trying next key...`);
-            continue; 
-         }
+         console.warn(`[Gemini Analyze] Key #${index + 1} failed entirely (likely during model listing). Moving to next key. Error: ${lastError}`);
+         continue; // Move to next key
       }
     }
 

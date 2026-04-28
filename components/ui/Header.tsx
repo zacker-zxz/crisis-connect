@@ -12,12 +12,12 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
-  // Wait for client hydration before rendering auth-dependent UI
+  // need to wait for hydration before showing auth stuff
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Hide header on dashboard routes (they have their own sidebars)
+  // dashboards have their own layout, don't show the global header
   if (pathname.includes('/dashboard')) return null;
 
   useEffect(() => {

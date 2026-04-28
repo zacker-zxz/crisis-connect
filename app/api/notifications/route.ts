@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     
     await connectToDatabase();
     
-    // Fetch unread notifications for the user, newest first
+    // grab unread ones, newest on top
     const notifications = await Notification.find({ userId, read: false })
       .sort({ createdAt: -1 })
       .lean();
@@ -47,7 +47,7 @@ export async function DELETE(request: Request) {
         const userId = request.headers.get('x-user-id');
 
         await connectToDatabase();
-        // Only delete notifications that have been read (viewed by the user)
+        // only clean up ones the user has already seen
         await Notification.deleteMany({ userId, read: true });
         return NextResponse.json({ success: true });
     } catch (error) {

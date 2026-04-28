@@ -3,7 +3,7 @@ import { connectToDatabase } from '@/lib/mongodb';
 import { Task } from '@/models';
 import { createTaskSchema } from '@/lib/validation';
 
-// GET all tasks (for heatmap and volunteer dashboard)
+// fetches every task — used by both the heatmap and the volunteer feed
 export async function GET() {
   try {
     await connectToDatabase();
@@ -15,7 +15,7 @@ export async function GET() {
   }
 }
 
-// POST a new task (NGO only)
+// only NGOs can create tasks
 export async function POST(request: Request) {
   try {
     const userId = request.headers.get('x-user-id');
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden: Only NGOs can create tasks' }, { status: 403 });
     }
 
-    // 2. Validate request body
+    // validate
     const body = await request.json();
     const parseResult = createTaskSchema.safeParse(body);
     if (!parseResult.success) {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     const { title, description, requiredVolunteers, requiredSkills, location, dateTime, priority } = parseResult.data;
 
-    // 3. Create task
+    // save to db
     await connectToDatabase();
     const newTask = await Task.create({
       ngoId: userId,

@@ -38,7 +38,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     setAuthorized(true);
   }, [mounted, user, pathname, router]);
 
-  // Avoid SSR/client mismatches by waiting for client mount first.
+  // wait for client mount to avoid SSR mismatch flicker
   if (!mounted) {
     return null;
   }

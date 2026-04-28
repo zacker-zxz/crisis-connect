@@ -3,17 +3,17 @@ import { NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import { rateLimiter } from "@/lib/rateLimiter";
 
-// Remove global genAI instance to allow dynamic keys
+// no global instance — we pick the key at runtime for failover
 
 export async function POST(req: Request) {
   try {
-    // 1. Rate limiting
+    // rate limit
     const limitResult = await rateLimiter(req);
     if (!limitResult.allowed) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    // 2. Authentication via Middleware Headers
+    // auth check — middleware sets this header
     const userId = req.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -39,7 +39,7 @@ const persistUserSafely = (user: User) => {
     try {
       localStorage.setItem('user', JSON.stringify(lightweightUser));
     } catch {
-      // Ignore persistence failures
+      // oh well, not critical
     }
   }
 };
@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   logout: () => {
-    // Clean up read notifications from DB before clearing session
+    // wipe read notifications from the DB before logging out
     const token = get().token;
     if (token && typeof window !== 'undefined') {
       fetch('/api/notifications', {
@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Clear local notification store
+      // also nuke the local notification cache
       localStorage.removeItem('notification-storage');
     }
     set({ token: null, user: null });

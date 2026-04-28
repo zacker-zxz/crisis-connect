@@ -85,7 +85,7 @@ export default function MissionsPage() {
       const userId = String(user?.id || user?._id || "");
       if (!userId) return;
 
-      // If we can estimate travel time, do it; otherwise default SLA.
+      // try to guess travel time, fall back to default SLA if we can't
       let etaMinutes = 60;
       const hasCoords =
         currentLocation &&
@@ -98,7 +98,7 @@ export default function MissionsPage() {
           task.location.lat as number,
           task.location.lng as number
         );
-        // Simple estimate: 30 km/h baseline. Clamp to [15m, 180m].
+        // rough guess: ~30 km/h avg, clamped between 15min and 3hrs
         etaMinutes = Math.max(15, Math.min(180, Math.round((km / 30) * 60)));
       }
 

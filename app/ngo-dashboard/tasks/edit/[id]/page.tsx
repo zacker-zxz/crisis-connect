@@ -58,12 +58,12 @@ export default function EditTaskPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   
-  // Address Autocomplete UI state
+  // autocomplete stuff
   const [addressQuery, setAddressQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
-  // Map Modal State
+  // map picker modal
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [viewState, setViewState] = useState({
     longitude: 72.8777,

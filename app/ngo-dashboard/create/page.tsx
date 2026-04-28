@@ -65,12 +65,12 @@ export default function CreateTaskPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Address Autocomplete UI state
+  // autocomplete stuff
   const [addressQuery, setAddressQuery] = useState('');
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
-  // Map Modal State
+  // map picker modal
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [viewState, setViewState] = useState({
     longitude: 72.8777,
@@ -85,7 +85,7 @@ export default function CreateTaskPage() {
   const addNotification = useNotificationStore((state) => state.addNotification);
   const autocompleteRef = useRef<HTMLDivElement>(null);
 
-  // Close suggestions when clicking outside
+  // dismiss autocomplete dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (autocompleteRef.current && !autocompleteRef.current.contains(event.target as Node)) {
@@ -96,7 +96,7 @@ export default function CreateTaskPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch Mapbox Geocoding suggestions
+  // hit Mapbox geocoding for address suggestions
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
       if (addressQuery.trim().length > 2) {
@@ -199,11 +199,11 @@ export default function CreateTaskPage() {
           }
           
           const assessment = await response.json();
-          // Get current date/time to local ISO string (YYYY-MM-DDTHH:mm)
+          // local datetime string for the input field
           const now = new Date();
           const localDateTime = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
           
-          // Add any new AI-suggested skills to the vocabulary
+          // merge AI-suggested skills into the dropdown options
           if (assessment.recommendedSkills) {
             setDynamicSkills(prev => {
               const newSkills = [...prev];

@@ -7,7 +7,7 @@ import { rateLimiter } from '@/lib/rateLimiter';
 
 export async function POST(request: Request) {
   try {
-    // Apply rate limiting
+    // rate limit
     const limitResult = await rateLimiter(request);
     if (!limitResult.allowed) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     
     const body = await request.json();
     
-    // Validate request body
+    // validate fields
     const parseResult = registerSchema.safeParse(body);
     if (!parseResult.success) {
       return NextResponse.json({ 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User already exists' }, { status: 400 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12); // Increased salt rounds for better security
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     const newUser = await User.create({
       name,

@@ -33,7 +33,7 @@ const STATUS_CONFIG: Record<string, { dot: string; label: string; textColor: str
   'Completed':   { dot: 'bg-emerald-500', label: 'Completed', textColor: 'text-emerald-600' },
 };
 
-// --- Mock tasks to supplement (matching create form structure) ---
+// some hardcoded tasks so the schedule isn't empty on first load
 const MOCK_TASKS: Task[] = [
   {
     _id: 'mock1', title: 'Flood Relief Coordinator', description: 'Coordinate rescue teams during flood in coastal area.', 
@@ -101,7 +101,7 @@ export default function SchedulePage() {
 
   const isPast = (dateStr: string) => new Date(dateStr) < today;
 
-  // Stats
+  // quick stats for the sidebar
   const upcoming = tasks.filter(t => !isPast(t.dateTime) && t.status !== 'Completed');
   const completed = tasks.filter(t => t.status === 'Completed');
   const totalVolunteers = tasks.reduce((sum, t) => sum + (t.filledVolunteers || 0), 0);

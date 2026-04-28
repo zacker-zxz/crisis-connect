@@ -8,14 +8,14 @@ export type LoadingScreenVariant = "solid" | "transparent";
 
 export interface LoadingScreenProps {
   isVisible: boolean;
-  /** solid = darker backdrop (deployments); transparent = light blur over content (AI scan) */
+  /** 'solid' = dark overlay for deployments, 'transparent' = lighter blur for AI scans */
   variant?: LoadingScreenVariant;
   headline?: string;
-  /** Optional rotating status text while visible */
+  /** rotating status messages shown while loading */
   statusLines?: string[];
 }
 
-/** Seeded particle positions so we never touch `window` during SSR */
+// pre-computed particle positions so SSR doesn't blow up trying to use window
 const PARTICLE_SEEDS = Array.from({ length: 18 }, (_, i) => ({
   left: ((i * 47) % 92) + 4,
   top: ((i * 31) % 88) + 6,

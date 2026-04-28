@@ -291,7 +291,7 @@ export default function VolunteerLayout({ children }: { children: React.ReactNod
                           setNotifOpen(!notifOpen);
                           if(!notifOpen) {
                             markAllAsRead();
-                            // Mark as read in DB
+                            // sync read state to DB too
                             if (token) {
                               try {
                                 await fetch('/api/notifications', {

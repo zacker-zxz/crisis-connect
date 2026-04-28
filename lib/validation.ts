@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// ---------- Auth Schemas ----------
+// --- auth ---
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
@@ -17,7 +17,7 @@ export const registerSchema = z.object({
   profileImageUrl: z.string().url().optional(),
 });
 
-// ---------- Task Schemas ----------
+// --- tasks ---
 export const createTaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().min(1),
@@ -31,10 +31,7 @@ export const createTaskSchema = z.object({
   priority: z.enum(['Low', 'Medium', 'High']).optional(),
 });
 
-// ---------- Generic Helper ----------
-/**
- * Utility to parse and format Zod validation errors for API responses.
- */
+// formats zod errors into something the frontend can display
 export function formatZodError(error: any) {
   return error.errors.map((e: any) => ({ path: e.path, message: e.message }));
 }

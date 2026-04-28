@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     if (existing) {
       if (existing.status === 'Rejected') {
         const cooldownDays = 14;
-        // The createdAt/updatedAt fields are maintained by Mongoose timestamps
+        // timestamps come from Mongoose's { timestamps: true }
         const rejectedAt = new Date((existing as any).updatedAt || (existing as any).createdAt || Date.now()).getTime();
         const daysSinceRejection = (Date.now() - rejectedAt) / (1000 * 60 * 60 * 24);
         
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
             error: `Your previous request to join this NGO was rejected. You can re-apply in ${daysLeft} days.` 
           }, { status: 403 });
         } else {
-          // Cooldown over. Delete old rejected request to make way for a new one
+          // cooldown expired, nuke the old rejection so they can try again
           await NGORequest.findByIdAndDelete(existing._id);
         }
       } else {
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       status: 'Pending',
     });
 
-    // Notify the NGO about the join request
+    // ping the NGO so they see the request
     const volunteer = await User.findById(userId).select('name');
     const volName = volunteer?.name || 'A volunteer';
     const ngoName = ngo?.organizationName || ngo?.name || 'your organization';

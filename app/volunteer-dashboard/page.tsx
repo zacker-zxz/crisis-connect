@@ -261,7 +261,7 @@ export default function VolunteerDashboardMain() {
             localStorage.setItem(`reachBy:${userId}:${task._id}`, String(reachByTs));
           }
         } catch {}
-        // Redirect to mission briefing after confirm
+        // send them to the briefing page after accept goes through
       } else {
         const error = await res.json();
         alert(error.error || "Failed to accept mission");

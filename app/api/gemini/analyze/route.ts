@@ -30,36 +30,21 @@ async function listGenerateContentModels(apiKey: string): Promise<string[]> {
 }
 
 function pickBestVisionCandidate(modelNames: string[]): string[] {
-  // try image-first models, then fall back to general multimodal ones
+  // ONLY use models that are confirmed working as of 2026
   const preferred = [
-    // image models (newer API surface)
-    "gemini-2.5-flash-image",
-    "gemini-3-pro-image-preview",
-    "gemini-3.1-flash-image-preview",
-
-    // older vision naming convention
-    "gemini-pro-vision",
-    "gemini-1.0-pro-vision",
-    "gemini-1.5-pro-vision",
-
-    // these usually handle images too
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
     "gemini-2.5-pro",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-2.0-flash-exp",
-
-    // might still exist on some keys
-    "gemini-flash-latest",
-    "gemini-flash-lite-latest",
-    "gemini-pro-latest",
   ];
 
-  const available = new Set(modelNames);
+  // Filter out ALL deprecated 1.x models from discovery results
+  const safe = modelNames.filter((m) => !m.includes("1.0") && !m.includes("1.5"));
+  const available = new Set(safe);
   const ordered = preferred.filter((m) => available.has(m));
-  // tack on anything else we found so we don't miss a model
-  const remaining = modelNames.filter((m) => !ordered.includes(m));
+  // add any other 2.x+ models we discovered but didn't explicitly list
+  const remaining = safe.filter((m) => !ordered.includes(m));
   return [...ordered, ...remaining];
 }
 
@@ -144,7 +129,7 @@ export async function POST(req: Request) {
         const fallback = [
           "gemini-2.0-flash",
           "gemini-2.0-flash-lite",
-          "gemini-pro-vision",
+          "gemini-2.5-flash",
         ];
         const modelsToTry = candidates.length ? candidates : fallback;
 

@@ -187,6 +187,8 @@ export default function VolunteerDashboardMain() {
       
       // Sort by proximity if user location is available
       if (user?.location?.lat && user?.location?.lng) {
+        const uLat = user.location.lat as number;
+        const uLng = user.location.lng as number;
         const toRad = (d: number) => (d * Math.PI) / 180;
         const getDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
           const R = 6371;
@@ -197,8 +199,8 @@ export default function VolunteerDashboardMain() {
         };
 
         available.sort((a: any, b: any) => {
-          const distA = (a.location?.lat && a.location?.lng) ? getDistance(user.location.lat, user.location.lng, a.location.lat, a.location.lng) : 9999;
-          const distB = (b.location?.lat && b.location?.lng) ? getDistance(user.location.lat, user.location.lng, b.location.lat, b.location.lng) : 9999;
+          const distA = (a.location?.lat && a.location?.lng) ? getDistance(uLat, uLng, a.location.lat, a.location.lng) : 9999;
+          const distB = (b.location?.lat && b.location?.lng) ? getDistance(uLat, uLng, b.location.lat, b.location.lng) : 9999;
           return distA - distB;
         });
       }

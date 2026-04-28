@@ -13,7 +13,7 @@ async function polishReasoningWithGemini(baseReasoning: string, taskTitle: strin
   for (const apiKey of keys) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const prompt = `You are Guardian AI for Crisis Connect. Rewrite the following resonance briefing in 1–2 sentences, clinical and inspiring, under 280 characters. Do not change any numbers or percentages. Task: "${taskTitle}". Text: ${baseReasoning}`;
       const result = await model.generateContent(prompt);
       const text = (await result.response.text()).trim().replace(/^["']|["']$/g, "");

@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     for (const apiKey of keys) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
         const prompt = `
           You are "Guardian AI", a high-performance orchestration engine for Crisis Connect.

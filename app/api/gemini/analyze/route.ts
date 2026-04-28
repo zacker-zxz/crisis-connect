@@ -30,21 +30,19 @@ async function listGenerateContentModels(apiKey: string): Promise<string[]> {
 }
 
 function pickBestVisionCandidate(modelNames: string[]): string[] {
-  // Heuristic preference order:
-  // - image/vision models first if present
-  // - then general flash/pro models
+  // try image-first models, then fall back to general multimodal ones
   const preferred = [
-    // image-capable models observed in ListModels
+    // image models (newer API surface)
     "gemini-2.5-flash-image",
     "gemini-3-pro-image-preview",
     "gemini-3.1-flash-image-preview",
 
-    // vision models (older naming)
+    // older vision naming convention
     "gemini-pro-vision",
     "gemini-1.0-pro-vision",
     "gemini-1.5-pro-vision",
 
-    // general multimodal (often supports images too; depends on rollout)
+    // these usually handle images too
     "gemini-2.5-flash",
     "gemini-2.5-flash-lite",
     "gemini-2.5-pro",
@@ -52,7 +50,7 @@ function pickBestVisionCandidate(modelNames: string[]): string[] {
     "gemini-2.0-flash-lite",
     "gemini-2.0-flash-exp",
 
-    // legacy aliases that may exist on some keys
+    // might still exist on some keys
     "gemini-flash-latest",
     "gemini-flash-lite-latest",
     "gemini-pro-latest",
@@ -60,20 +58,20 @@ function pickBestVisionCandidate(modelNames: string[]): string[] {
 
   const available = new Set(modelNames);
   const ordered = preferred.filter((m) => available.has(m));
-  // Add the rest (stable ordering) so we still try something.
+  // tack on anything else we found so we don't miss a model
   const remaining = modelNames.filter((m) => !ordered.includes(m));
   return [...ordered, ...remaining];
 }
 
 export async function POST(req: Request) {
   try {
-    // 1. Rate limiting
+    // rate limit first
     const limitResult = await rateLimiter(req);
     if (!limitResult.allowed) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    // 2. Authentication via Middleware Headers
+    // auth — middleware injects the user id header
     const userId = req.headers.get('x-user-id');
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -91,7 +89,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Gemini API Key missing in environment" }, { status: 500 });
     }
 
-    // Extract MIME type and data from data URL
+    // pull the mime + base64 payload out of the data URL
     let mimeType = "image/jpeg";
     let base64Data = image;
 

@@ -10,13 +10,13 @@ import { rateLimiter } from '@/lib/rateLimiter';
 
 export async function POST(request: Request) {
   try {
-    // Apply simple IP rate limiting
+    // rate limit check
     const limitResult = await rateLimiter(request);
     if (!limitResult.allowed) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    // Validate request body
+    // validate input
     const body = await request.json();
     const parseResult = loginSchema.safeParse(body);
     if (!parseResult.success) {
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     const token = jwt.sign({ userId: user._id.toString(), role: user.role }, env.JWT_SECRET, { expiresIn: '7d' });
 
-    // Prepare response without password
+    // strip password before sending back
     const userResponse = {
       id: user._id,
       name: user.name,
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     };
 
     const response = NextResponse.json({ token, user: userResponse }, { status: 200 });
-    // Set auth cookie (httpOnly, secure, sameSite)
+    // set cookie so subsequent requests are authenticated
     setAuthCookie(response, token);
     return response;
   } catch (error: any) {

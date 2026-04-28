@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 
-// Simple in‑memory token bucket rate limiter (IP based)
-// Limits to 10 requests per minute per IP by default – configurable via env vars.
+// basic in-memory rate limiter (token bucket, keyed by IP)
+// defaults to 10 req/min — tweak with RATE_LIMIT_* env vars
 
 const WINDOW_MS = Number(process.env.RATE_LIMIT_WINDOW_MS ?? 60_000); // 1 minute
 const MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS ?? 10);
@@ -13,10 +13,7 @@ type Bucket = {
 
 const buckets = new Map<string, Bucket>();
 
-/**
- * Checks the request's IP against a token‑bucket limiter.
- * Returns an object indicating whether the request is allowed.
- */
+// checks the IP against the bucket and returns { allowed: true/false }
 export async function rateLimiter(request: Request) {
   const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
   if (!ip) return { allowed: true }; // fallback – allow if we cannot identify IP
@@ -24,7 +21,7 @@ export async function rateLimiter(request: Request) {
   const now = Date.now();
   const bucket = buckets.get(ip) ?? { lastReset: now, tokens: MAX_REQUESTS };
 
-  // Reset bucket if window elapsed
+  // window expired, refill
   if (now - bucket.lastReset > WINDOW_MS) {
     bucket.tokens = MAX_REQUESTS;
     bucket.lastReset = now;
@@ -36,7 +33,7 @@ export async function rateLimiter(request: Request) {
     return { allowed: true };
   }
 
-  // No tokens left – reject
+  // out of tokens
   buckets.set(ip, bucket);
   return { allowed: false };
 }

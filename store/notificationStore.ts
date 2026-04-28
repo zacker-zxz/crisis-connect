@@ -14,7 +14,7 @@ export interface Notification {
 
 interface NotificationState {
   notifications: Notification[];
-  /** DB notification IDs already ingested into local store (avoids duplicates on re-poll) */
+  /** tracks which DB notification IDs we've already pulled in (prevents dupes on re-poll) */
   ingestedDbIds: string[];
   addNotification: (notification: Omit<Notification, 'id' | 'time' | 'read'>) => void;
   addDbNotification: (notification: { _id: string; title: string; message: string; type: string }) => void;
@@ -51,7 +51,7 @@ export const useNotificationStore = create<NotificationState>()(
       })),
       addDbNotification: (notif) => {
         const state = get();
-        // Skip if already ingested
+        // already got this one
         if (state.ingestedDbIds.includes(notif._id)) return;
         set({
           ingestedDbIds: [...state.ingestedDbIds, notif._id],

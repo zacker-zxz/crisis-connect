@@ -22,17 +22,17 @@ export async function POST(
       return NextResponse.json({ error: 'Mission not found' }, { status: 404 });
     }
 
-    // Check if already assigned
+    // already on this mission?
     if (task.assignedVolunteers.includes(userId)) {
       return NextResponse.json({ error: 'Mission already accepted' }, { status: 400 });
     }
 
-    // Check if full
+    // no more slots
     if (task.filledVolunteers >= task.requiredVolunteers) {
       return NextResponse.json({ error: 'Mission is already full' }, { status: 400 });
     }
 
-    // Update task
+    // add volunteer + bump count
     task.assignedVolunteers.push(userId);
     task.filledVolunteers += 1;
     if (task.filledVolunteers >= task.requiredVolunteers) {
@@ -40,7 +40,7 @@ export async function POST(
     }
     await task.save();
 
-    // Notify the NGO who owns this mission
+    // let the NGO know someone joined
     const volunteer = await User.findById(userId).select('name');
     const volName = volunteer?.name || 'A volunteer';
     await Notification.create({

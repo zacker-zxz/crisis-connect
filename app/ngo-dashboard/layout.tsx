@@ -135,7 +135,7 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Close notifications when clicking outside
+  // close notif dropdown on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
@@ -177,7 +177,7 @@ export default function NgoLayout({ children }: { children: React.ReactNode }) {
     setNotifOpen(prev => !prev);
     if (!notifOpen) {
       markAllAsRead();
-      // Mark as read in DB so they get cleaned up on logout
+      // also mark them read in the DB so logout cleanup works
       const token = useAuthStore.getState().token;
       if (token) {
         try {

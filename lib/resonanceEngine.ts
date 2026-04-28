@@ -1,7 +1,6 @@
-/**
- * Deterministic "Resonance Field" scoring: skill match, mission pressure,
- * capacity gap, and optional geo proximity. No external API required.
- */
+// Scores tasks for a volunteer based on skill overlap, how badly they
+// need people, priority level, and how close the volunteer is. Runs
+// entirely on the server — no external API calls.
 
 export type ResonanceBottleneck = "skill" | "capacity" | "priority" | "geo" | "balanced";
 

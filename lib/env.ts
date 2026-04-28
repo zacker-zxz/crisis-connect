@@ -13,7 +13,7 @@ const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
   console.error('❌ Invalid environment variables:', JSON.stringify(parsed.error.format(), null, 2));
-  // In development, we might want to continue with what we have
+  // don't crash in dev if some vars are missing
 }
 
 export const env = parsed.success ? parsed.data : (process.env as unknown as z.infer<typeof envSchema>);

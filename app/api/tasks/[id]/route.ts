@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { Task } from '@/models';
 
-// GET a single task
+// single task lookup (populates the NGO name for the UI)
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -21,7 +21,7 @@ export async function GET(
   }
 }
 
-// UPDATE a task (NGO only)
+// update — only the NGO that created the task can edit it
 export async function PUT(
   request: Request,
   context: { params: Promise<{ id: string }> }
@@ -39,7 +39,7 @@ export async function PUT(
     await connectToDatabase();
     const body = await request.json();
     
-    // Check ownership
+    // make sure this NGO actually owns the task
     const task = await Task.findById(id);
     if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     if (task.ngoId.toString() !== userId) {
@@ -54,7 +54,7 @@ export async function PUT(
   }
 }
 
-// DELETE a task (NGO only)
+// delete — same ownership check as update
 export async function DELETE(
   request: Request,
   context: { params: Promise<{ id: string }> }

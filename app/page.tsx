@@ -201,7 +201,7 @@ export default function Home() {
   );
 }
 
-// Subcomponents
+// simple checkmark icon since lucide's version was too thick
 function CheckCircle({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

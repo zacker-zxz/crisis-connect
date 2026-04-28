@@ -38,7 +38,7 @@ export async function POST(
     }
     await task.save();
 
-    // Notify the NGO who owns this mission
+    // heads up to the NGO
     const volunteer = await User.findById(userId).select('name');
     const volName = volunteer?.name || 'A volunteer';
     await Notification.create({

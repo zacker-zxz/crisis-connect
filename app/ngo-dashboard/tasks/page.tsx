@@ -64,7 +64,7 @@ export default function ActiveTasksPage() {
     fetchTasks();
   }, []);
 
-  // Close menu on outside click
+  // close the action menu when clicking elsewhere
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {

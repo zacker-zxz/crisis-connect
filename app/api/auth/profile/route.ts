@@ -11,7 +11,7 @@ export async function PUT(request: Request) {
     
     const body = await request.json();
     
-    // Allowed fields to update
+    // whitelist of updatable fields
     const ALLOWED_FIELDS = [
       'name', 'organizationName', 'publicDescription',
       'skills', 'phone', 'website', 'sector', 'city', 'operatingRegions',
@@ -36,7 +36,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Return sanitized user object
+    // don't leak the password hash
     const { password: _, ...sanitizedUser } = updatedUser.toObject();
     
     return NextResponse.json({

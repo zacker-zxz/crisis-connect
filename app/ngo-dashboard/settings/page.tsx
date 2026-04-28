@@ -25,7 +25,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
 
-  // --- Profile Fields ---
+  // profile form state
   const [name,              setName]              = useState(user?.name || '');
   const [publicDescription, setPublicDescription] = useState((user as any)?.publicDescription || '');
   const [phone,             setPhone]             = useState((user as any)?.phone || '');
@@ -34,7 +34,7 @@ export default function SettingsPage() {
   const [sector,            setSector]            = useState((user as any)?.sector || '');
   const [operatingRegions,  setOperatingRegions]  = useState<string[]>((user as any)?.operatingRegions || []);
 
-  // --- Notification Prefs ---
+  // notification toggles
   const [notifyVolJoin,   setNotifyVolJoin]   = useState((user as any)?.notifyOnVolunteerJoin  ?? true);
   const [notifyDeadline,  setNotifyDeadline]  = useState((user as any)?.notifyOnDeadline       ?? true);
   const [notifyCapacity,  setNotifyCapacity]  = useState((user as any)?.notifyOnCapacityFull   ?? true);

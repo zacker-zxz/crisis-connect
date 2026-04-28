@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 // These routes require authentication
-const AUTH_ROUTES = ['/ngo-dashboard', '/volunteer-dashboard', '/api/tasks', '/api/notifications', '/api/volunteer'];
+const AUTH_ROUTES = ['/ngo-dashboard', '/volunteer-dashboard', '/api/tasks', '/api/notifications', '/api/volunteer', '/api/gemini', '/api/ngo-requests'];
 
 // These routes are restricted by role
 const ROLE_ROUTES = {
